@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#SBATCH --partition=normal
+#SBATCH --job-name=download_nct_100k
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --time=5:00:00
+#SBATCH --mem=32000M
+#SBATCH --output=job_logs/slurm_output_%x_%j.out
+
+cd /project/bdolicki/data
+
+curl -O https://zenodo.org/record/1214456/files/NCT-CRC-HE-100K.zip
+unzip NCT-CRC-HE-100K.zip
+rm NCT-CRC-HE-100K.zip
+
+echo "finished"
