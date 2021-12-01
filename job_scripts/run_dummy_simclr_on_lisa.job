@@ -29,7 +29,7 @@ run_train()
     config.CHECKPOINT.DIR=$EXPERIMENT_DIR_CONTAINER/$SLURM_JOB_NAME/checkpoints/$SLURM_JOB_ID \
     config.OPTIMIZER.use_larc=False \
     config.OPTIMIZER.num_epochs=2 \
-    +config.TENSORBOARD_SETUP.USE_TENSORBOARD=true"
+    config.HOOKS.TENSORBOARD_SETUP.USE_TENSORBOARD=true"
 #echo pwd
 }
 
