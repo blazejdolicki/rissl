@@ -67,7 +67,7 @@ config:
         embedding_dim: 128
   OPTIMIZER:
       name: sgd
-      use_larc: True
+      use_larc: False
       larc_config:
         clip: False
         trust_coefficient: 0.001
