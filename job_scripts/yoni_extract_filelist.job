@@ -1,0 +1,84 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -p gpu_titanrtx_short
+#SBATCH --gpus-per-node=titanrtx:1
+#SBATCH -t 1:00:0
+
+TIMESTAMPED_REPO="$1"
+
+echo "Using $TIMESTAMPED_REPO"
+
+ROOT=/project/schirris
+if [ "$TIMESTAMPED_REPO" = "" ] ; then
+  SOURCE=$ROOT/hissl
+else
+  SOURCE=$ROOT/hissl-versions/"$TIMESTAMPED_REPO"
+fi
+
+#EXPERIMENT GENERIC
+EXPERIMENT_DIR=$ROOT/hissl-logs
+EXPERIMENT_DIR_CONTAINER=/hissl-logs
+JOBS_SOURCE=$ROOT/hissl-jobs
+SINGULARITYIMAGE=$ROOT/containers/hissl_20210922_np121_h5py.sif
+
+#HARDWARE SETUP
+NUM_WORKERS=4
+NUM_NODES=1
+NUM_GPUS=1
+BATCH_SIZE_PER_GPU=256
+
+#Start a new experiment from scratch
+CHECKPOINT_ID=$SLURM_JOB_ID
+if [ "$CHECKPOINT_ID" = "" ] ; then
+  CHECKPOINT_ID=$(date +%s )
+fi
+#Or continue a previous experiment
+#CHECKPOINT_ID=8379148-test-extraction
+
+#EXPERIMENT SPECIFIC
+LOAD_WEIGHTS_FROM_BATCH_SIZE=batch-128
+LOAD_WEIGHTS_FROM_CHECKPOINT_SLURM=8382544
+LOAD_WEIGHTS_FROM_EPOCH_NUM=99
+FINAL_CHECKPOINT=final_checkpoint_
+#FINAL_CHECKPOINT="" # if it's not the very last model.
+LOAD_WEIGHTS_FROM=/hissl-logs/deepsmile-rev/pretraining/tcga-crck/checkpoints/"$LOAD_WEIGHTS_FROM_BATCH_SIZE"/"$LOAD_WEIGHTS_FROM_CHECKPOINT_SLURM"/model_"$FINAL_CHECKPOINT"phase"$LOAD_WEIGHTS_FROM_EPOCH_NUM".torch
+CONFIG_YAML=deepsmile-rev/extract-features/tcga-crck/extract_rn18_ssl_pretrained_4gpu
+DATA_ROOT=/project/schirris/data/kather_data/data/msidata/crc_dx
+
+#---naming
+CURRENT_PWD=$PWD
+NAME=${CURRENT_PWD#$JOBS_SOURCE/}/epoch"$LOAD_WEIGHTS_FROM_EPOCH_NUM" # Set the name to the directory that the job script is in
+
+echo $SLURM_JOB_ID
+
+run_train()
+{
+  echo "python -u /hissl/tools/run_distributed_engines_hissl.py \
+      hydra.verbose=true \
+      config=$CONFIG_YAML \
+      config.DATA.TRAIN.BATCHSIZE_PER_REPLICA=$BATCH_SIZE_PER_GPU \
+      config.DATA.TEST.BATCHSIZE_PER_REPLICA=$BATCH_SIZE_PER_GPU \
+      config.CHECKPOINT.DIR=$EXPERIMENT_DIR_CONTAINER/$NAME/$CHECKPOINT_ID \
+      config.DATA.NUM_DATALOADER_WORKERS=$NUM_WORKERS \
+      config.DISTRIBUTED.NUM_NODES=$NUM_NODES \
+      config.DISTRIBUTED.NUM_PROC_PER_NODE=$NUM_GPUS \
+      config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$LOAD_WEIGHTS_FROM"
+
+}
+
+slurm_submit()
+{
+  singularity exec --no-home --nv \
+      --bind $SOURCE:/hissl \
+      --bind $EXPERIMENT_DIR:$EXPERIMENT_DIR_CONTAINER \
+      --bind $DATA_ROOT \
+      --bind "$JOBS_SOURCE" \
+      --bind "$TMPDIR" \
+      --pwd /hissl \
+      $SINGULARITYIMAGE \
+      $COMMAND &
+}
+
+COMMAND=$(run_train)
+
+echo $(slurm_submit $COMMAND)

@@ -1,0 +1,112 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -p gpu_titanrtx_shared
+#SBATCH --gpus-per-node=titanrtx:1
+#SBATCH -t 4-0:00:00
+#SBATCH --exclude r34n4
+
+TIMESTAMPED_REPO="$1"
+ROOT=/project/schirris
+
+#IF FILE IS RUN WITHOUT ARGUMENT, JUST READ CODE FROM /HISSL. IF ARGUMENT IS GIVEN, USE THAT REPO
+if [ "$TIMESTAMPED_REPO" = "" ] ; then
+  SOURCE=$ROOT/hissl
+else
+  SOURCE=$ROOT/hissl-versions/"$TIMESTAMPED_REPO"
+fi
+
+
+echo "Using $SOURCE"
+
+#HARDWARE SETUP
+NUM_WORKERS=5
+NUM_NODES=1
+NUM_GPUS=1
+BATCH_SIZE_PER_GPU=128
+NUM_EPOCHS=100
+
+#DATASET SPECIFIC
+DATA_PATHS_ROOT=/project/schirris/data/kather_data/data/msidata/crc_dx/train
+COPY_TO="$TMPDIR"/images
+
+#EXPERIMENT SPECIFIC
+CONFIG_YAML=deepsmile-rev/reproduce_previous_extractor/tcga-crck/gpu_rn18_simclr_on_tcga_crck
+NAME=deepsmile-rev/reproduce_previous_extractor/tcga-crck
+
+#Start a new experiment from scratch
+CHECKPOINT_ID=$SLURM_JOB_ID
+
+#Or continue a previous experiment
+#CHECKPOINT_ID=8379148
+
+#EXPERIMENT GENERIC
+EXPERIMENT_DIR=$ROOT/hissl-logs
+EXPERIMENT_DIR_CONTAINER=/hissl-logs
+JOBS_SOURCE=$ROOT/hissl-jobs
+SINGULARITYIMAGE=$ROOT/containers/hissl_20210922_np121_h5py.sif
+
+CHECKPOINT_DIR=$EXPERIMENT_DIR_CONTAINER/$NAME/checkpoints/$CHECKPOINT_ID
+
+echo "Writing results to $CHECKPOINT_DIR"
+
+PREFETCH_FACTOR=2
+
+echo $SLURM_JOB_ID
+
+copy_data=true
+if [ "$copy_data" = true ] ; then
+  # Copy WSIs to scratch
+  tm=$(date '+%B %V %T.%3N:')
+  echo "${tm}"
+  echo "Copying WSIs to scratch..."
+  rsync -azv --exclude '*.pt' $DATA_PATHS_ROOT/ $COPY_TO
+  echo "Done copying to scratch..."
+  tm=$(date '+%B %V %T.%3N:')
+  echo "${tm}"
+
+  REMOVE_IMG_PATH_PREFIX=$DATA_PATHS_ROOT
+  NEW_IMG_PATH_PREFIX=$COPY_TO
+elif [ "$copy_data" = done ] ; then
+  TMPDIR=/scratch/slurm.8381155.0/scratch
+  COPY_TO="$TMPDIR"/images
+  REMOVE_IMG_PATH_PREFIX=$DATA_PATHS_ROOT
+  NEW_IMG_PATH_PREFIX=$COPY_TO
+else
+  REMOVE_IMG_PATH_PREFIX=""
+  NEW_IMG_PATH_PREFIX=""
+fi
+
+run_train()
+{
+  echo "python -u /hissl/tools/run_distributed_engines_hissl.py \
+      hydra.verbose=true \
+      config=$CONFIG_YAML \
+      config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+      config.DISTRIBUTED.NUM_NODES=$NUM_NODES \
+      config.DISTRIBUTED.NUM_PROC_PER_NODE=$NUM_GPUS \
+      config.OPTIMIZER.num_epochs=$NUM_EPOCHS \
+      config.DATA.NUM_DATALOADER_WORKERS=$NUM_WORKERS \
+      config.DATA.TRAIN.BATCHSIZE_PER_REPLICA=$BATCH_SIZE_PER_GPU \
+      +config.DATA.TRAIN.PREFETCH_FACTOR=$PREFETCH_FACTOR \
+      config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$REMOVE_IMG_PATH_PREFIX \
+      config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX "
+}
+
+slurm_submit()
+{
+  singularity exec --no-home --nv \
+      --bind $SOURCE:/hissl \
+      --bind $EXPERIMENT_DIR:$EXPERIMENT_DIR_CONTAINER \
+      --bind $DATA_PATHS_ROOT \
+      --bind "$COPY_TO" \
+      --bind "$JOBS_SOURCE" \
+      --bind "$TMPDIR" \
+      --pwd /hissl \
+      --env NCCL_ASYNC_ERROR_HANDLING=1 \
+      $SINGULARITYIMAGE \
+      $COMMAND &
+}
+
+COMMAND=$(run_train)
+
+echo $(slurm_submit $COMMAND)
