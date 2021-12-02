@@ -25,7 +25,7 @@ config:
     TRAIN: # TODO change the dataset
       DATA_SOURCES: [disk_folder]
       DATASET_NAMES: [imagenet1k_folder]
-      BATCHSIZE_PER_REPLICA: 64
+      BATCHSIZE_PER_REPLICA: 64 # 64 is fine for titan RTX but for GeForce 1080Ti decrease it to avoid CUDA OOM
       LABEL_TYPE: sample_index    # just an implementation detail. Label isn't used
       TRANSFORMS:
         - name: ImgPilToMultiCrop
