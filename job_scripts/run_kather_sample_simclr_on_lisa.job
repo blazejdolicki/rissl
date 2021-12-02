@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -N 1
-#SBATCH -p gpu_titanrtx_short
+#SBATCH -p gpu_short
 #SBATCH --gres=gpu:1
-#SBATCH --job-name=train_dummy_simclr
+#SBATCH --job-name=train_kather_sample_simclr
 #SBATCH --cpus-per-task=3
 #SBATCH -t 1:00:0
 #SBATCH --output=job_logs/slurm_output_%x_%j.out
@@ -18,14 +18,16 @@ CONFIG_PATH=blazej/quick_gpu_resnet50_simclr
 LOGS_DIR=hissl-logs
 EXPERIMENT_DIR=$HOME/thesis/$LOGS_DIR
 EXPERIMENT_DIR_CONTAINER=/$LOGS_DIR
-DATA_ROOT=""
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/NCT-CRC-HE-100K"
+
 run_train()
 {
   echo "python3 tools/run_distributed_engines_hissl.py \
     hydra.verbose=true \
     config=$CONFIG_PATH\
-    config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
-    config.DATA.TRAIN.DATA_PATHS=[\"./hissl/dummy_training/dummy_data/train\"] \
+    config.DATA.TRAIN.DATASET_NAMES=[nct] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.DATA_PATHS=[\"$DATA_ROOT/train_images.npy\"] \
     config.CHECKPOINT.DIR=$EXPERIMENT_DIR_CONTAINER/$SLURM_JOB_NAME/checkpoints/$SLURM_JOB_ID \
     config.OPTIMIZER.use_larc=False \
     config.OPTIMIZER.num_epochs=2 \
@@ -39,6 +41,7 @@ slurm_submit()
       --bind $SOURCE:/hissl \
       --bind $HOME/thesis/ssl-histo/config/blazej:/hissl/configs/config/blazej \
       --bind $EXPERIMENT_DIR:$EXPERIMENT_DIR_CONTAINER \
+      --bind $DATA_ROOT \
       --pwd /hissl \
       $SINGULARITYIMAGE \
       $COMMAND &
