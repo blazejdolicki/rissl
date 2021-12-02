@@ -2,8 +2,14 @@ import os
 import random
 import numpy as np
 
+
 DATA_PATH = "data/NCT-CRC-HE-100K"
 SAMPLE_SIZE_PER_CLASS = 100
+
+current_dir = os.getcwd()
+DATA_PATH = os.path.join(current_dir, DATA_PATH)
+
+print("DATA PATH", DATA_PATH)
 
 for split in ["train", "test"]:
     random_imgs = []
