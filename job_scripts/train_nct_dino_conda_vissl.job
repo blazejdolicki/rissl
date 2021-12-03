@@ -1,0 +1,47 @@
+#!/bin/bash
+#SBATCH -N 2 #number of nodes
+#SBATCH -p gpu_titanrtx_short
+#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
+#SBATCH --job-name=train_nct_dino
+#SBATCH -t 1:00:0
+#SBATCH --output=ssl-histo/job_logs/slurm_output_%x_%j.out
+
+NUM_WORKERS=2
+NUM_GPUS=1
+NUM_TASKS=1
+NUM_MACHINES=1
+TRAIN=train/
+SOURCE=$HOME/thesis/hissl
+SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
+CONFIG_PATH=dummy/quick_gpu_resnet50_simclr
+LOGS_DIR=hissl-logs
+EXPERIMENT_DIR=$HOME/thesis/$LOGS_DIR
+EXPERIMENT_DIR_CONTAINER=/$LOGS_DIR
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/NCT-CRC-HE-100K"
+
+module load 2021
+module load Anaconda3/2021.05
+source activate thesis
+source activate vissl
+
+cd $SOURCE
+
+# for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
+export NCCL_ASYNC_ERROR_HANDLING=1
+export NCCL_DEBUG=INFO
+
+# to silence this error:
+# "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'
+# from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored."
+unset LD_PRELOAD
+
+python3 tools/run_distributed_engines.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH\
+    config.DATA.TRAIN.DATA_SOURCES=[synthetic] \
+    config.DATA.TRAIN.DATA_LIMIT=1000 \
+    config.DATA.TRAIN.BATCHSIZE_PER_REPLICA=10 \
+    config.CHECKPOINT.DIR=$HOME/thesis/$EXPERIMENT_DIR_CONTAINER/$SLURM_JOB_NAME/checkpoints/$SLURM_JOB_ID \
+    config.DISTRIBUTED.NUM_NODES=2 \
+    config.DISTRIBUTED.NUM_PROC_PER_NODE=4 \
+    config.DISTRIBUTED.RUN_ID=localhost:46357
