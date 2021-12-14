@@ -1,10 +1,27 @@
 # ssl-histo
-Repository containing code for my MSc thesis.
+Repository containing code for my MSc thesis. Keep in mind that the commands mentioned below apply for Linux and will often not work on other operating systems.
 ## Installation
 TODO
 ## Datasets
-Descriptions of the datasets are available in the paper. TODO: Add link
+Descriptions of the datasets are available in the paper. Most of datasets are compressed in some format and you have to unpack them.
+For `.zip` files  (given the current dir contains `<file>`:
+```
+unzip <file>.zip
+```
+For `.tar.gz` files (given the current dir contains `<file>`:
+```
+tar -xvf <file>.tar.gz
+```
+Once you unpack the data, you can remove the compressed file to save disk space with `rm`.
 ### PatchCam
-Download all files listed [in this repository](https://github.com/basveeling/pcam) and unpack them in `data/pcam` (TODO: probably later update directory).
+Download all files listed [in this repository](https://github.com/basveeling/pcam) and unpack in `data/pcam` (TODO: probably later update directory).
 ### NCT-CRC-HE-100K
-Download all files from [here](https://zenodo.org/record/1214456#.YaCjaNDMJPa) and unpack them in `data/NCT-CRC-HE-100K`.
+Download all files from [here](https://zenodo.org/record/1214456#.YaCjaNDMJPa) and unpack in `data/nct`.
+### BreaKHis
+Download [here](https://web.inf.ufpr.br/vri/databases/breast-cancer-histopathological-database-breakhis/) and unpack in `data/breakhis`.
+Also download the python script and once the data is downloaded and unpacked, run:
+```
+python mkfold.py
+```
+### Bach
+Download [here](https://zenodo.org/record/3632035#.YbdBDr3MJPa) and unpack in `data/bach`.
