@@ -9,6 +9,8 @@ parser.add_argument("--sample_size", default=10,
                     type=int, help="Size of the sampled datasets")
 args = parser.parse_args()
 
+VALID_RATIO = 0.2
+
 DATA_PATH = "data/nct/"
 split_folders = {"train": "NCT-CRC-HE-100K",
                  "test": "CRC-VAL-HE-7K"}
@@ -34,13 +36,23 @@ def get_filepaths_recursively(root_path):
     return file_paths, file_labels
 
 
+def save_split(imgs, labels, split):
+    print(f"Saving {split} set with {len(imgs)} examples")
+    # save the filelists
+    sample_suffix = f"_sample_{args.sample_size}" if args.use_sample else ""
+    filelist_imgs_path = os.path.join(DATA_PATH, f"{split}{sample_suffix}_images.npy")
+    filelist_labels_path = os.path.join(DATA_PATH, f"{split}{sample_suffix}_labels.npy")
+    np.save(filelist_imgs_path, np.array(imgs))
+    np.save(filelist_labels_path, np.array(labels))
+
+
 for split in ["train", "test"]:
     split_path = os.path.join(DATA_PATH, split_folders[split])
     imgs, labels = get_filepaths_recursively(split_path)
 
     assert len(imgs) == len(labels), "Number of images and labels should be equal"
 
-    print(f"Using full {split} split with {len(imgs)} examples")
+
     if args.use_sample:
         print(f"Using sample of {split} split with {args.sample_size} examples")
         # sample k indices
@@ -49,13 +61,24 @@ for split in ["train", "test"]:
         imgs = imgs[random_idxs]
         labels = labels[random_idxs]
 
-    # TODO: Currently we don't shuffle the full dataset, maybe we want to do it in the future
+    if split == "train":
+        # create and save validation set
+        all_idxs = np.array(range(len(imgs)))
+        val_idxs = random.sample(list(all_idxs), int(len(imgs) * VALID_RATIO))
+        train_idxs = np.setdiff1d(all_idxs, val_idxs)
 
-    # save the filelists
-    sample_suffix = f"_sample_{args.sample_size}" if args.use_sample else ""
-    filelist_imgs_path = os.path.join(DATA_PATH, f"{split}{sample_suffix}_images.npy")
-    filelist_labels_path = os.path.join(DATA_PATH, f"{split}{sample_suffix}_labels.npy")
-    np.save(filelist_imgs_path, np.array(imgs))
-    np.save(filelist_labels_path, np.array(labels))
+        assert len(train_idxs) + len(val_idxs) == len(all_idxs)
+        assert len(np.intersect1d(train_idxs, val_idxs)) == 0, \
+            "Image indices shouldn't overlap between train and validation sets"
+
+        val_imgs = imgs[val_idxs]
+        val_labels = labels[val_idxs]
+        save_split(val_imgs, val_labels, "valid")
+
+        imgs = imgs[train_idxs]
+        labels = labels[train_idxs]
+
+    save_split(imgs, labels, split)
+
 
 
