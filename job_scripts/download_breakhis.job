@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_shared
+#SBATCH --job-name=download_breakhis
+#SBATCH --gpus-per-node=titanrtx:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --time=1:00:00
+#SBATCH --mem=32000M
+#SBATCH --output=job_logs/slurm_output_%x_%j.out
+
+cd $HOME/thesis/ssl-histo/data/
+
+curl -O https://www.inf.ufpr.br/vri/databases/BreaKHis_v1.tar.gz
+
+
+echo "finished"
+

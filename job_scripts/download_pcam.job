@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_short
+#SBATCH --job-name=download_pcam
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --gpus-per-node=gpu:0
+#SBATCH --time=1:00:00
+#SBATCH --mem=32000M
+#SBATCH --output=job_logs/slurm_output_%x_%j.out
+
+DATA_DIR=$HOME/thesis/ssl-histo/data/pcam
+
+mkdir -p $DATA_DIR
+cd $DATA_DIR
+
+echo "downloading train set..."
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_train_x.h5.gz
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_train_y.h5.gz
+
+gzip -d camelyonpatch_level_2_split_train_x.h5.gz
+gzip -d camelyonpatch_level_2_split_train_y.h5.gz
+
+echo "downloading valid set..."
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_valid_x.h5.gz
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_valid_y.h5.gz
+
+gzip -d camelyonpatch_level_2_split_valid_x.h5.gz
+gzip -d camelyonpatch_level_2_split_valid_y.h5.gz
+
+echo "downloading test set..."
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_test_x.h5.gz
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_test_y.h5.gz
+#
+#gzip -d camelyonpatch_level_2_split_test_x.h5.gz
+gzip -d camelyonpatch_level_2_split_test_y.h5.gz
+
+echo "download meta files..."
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_train_meta.csv
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_valid_meta.csv
+#curl -O https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_test_meta.csv
+
+echo "finished"
+

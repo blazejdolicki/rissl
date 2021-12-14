@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_titanrtx_short
+#SBATCH --job-name=download_bach
+#SBATCH --gpus-per-node=gtx1080ti:0
+#SBATCH --ntasks=1
+#SBATCH --time=01:00:00
+#SBATCH --output=job_logs/slurm_output_%x_%j.out
+
+DIR=$HOME/thesis/ssl-histo/data/bach
+mkdir -p $DIR
+cd $DIR
+
+curl -O https://zenodo.org/record/3632035/files/ICIAR2018_BACH_Challenge.zip
+curl -O https://zenodo.org/record/3632035/files/ICIAR2018_BACH_Challenge_TestDataset.zip
+curl -O https://zenodo.org/record/3632035/files/LICENSE.txt
+curl -O https://zenodo.org/record/3632035/files/README.txt
+
+unzip ICIAR2018_BACH_Challenge.zip
+unzip ICIAR2018_BACH_Challenge_TestDataset.zip
+
+rm ICIAR2018_BACH_Challenge.zip
+rm ICIAR2018_BACH_Challenge_TestDataset.zip
+
+echo "finished"
+
