@@ -12,7 +12,7 @@ parser.add_argument("--seed", default=7,
 
 args = parser.parse_args()
 
-VALID_RATIO = 0.2
+VALID_RATIO = 0.25
 
 DATA_PATH = "data/nct/"
 split_folders = {"train": "NCT-CRC-HE-100K",
