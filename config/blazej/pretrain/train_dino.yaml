@@ -136,9 +136,10 @@ config:
   DISTRIBUTED: # TODO this might need to be changed
     BACKEND: nccl
     NUM_NODES: 1
-    NUM_PROC_PER_NODE: 1
+    NUM_PROC_PER_NODE: 4
     INIT_METHOD: tcp
     RUN_ID: auto
+    NCCL_DEBUG: true
   MACHINE:
     DEVICE: gpu
   CHECKPOINT:
