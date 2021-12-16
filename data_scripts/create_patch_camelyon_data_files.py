@@ -79,6 +79,15 @@ class PatchCamelyon:
                 "camelyonpatch_level_2_split_valid_y.h5",
                 "https://zenodo.org/record/2546921/files/camelyonpatch_level_2_split_valid_y.h5.gz",
             ),
+            "test_x": Split(
+                "camelyonpatch_level_2_split_test_x.h5",
+                ""
+            ),
+            "test_y": Split(
+                "camelyonpatch_level_2_split_test_y.h5",
+                ""
+            )
+
         }
     )
 
@@ -158,6 +167,16 @@ def create_data_files(input_path: str, output_path: str, download: bool):
         download=False,
     )
     to_disk_folder_split(valid_set, output_valid_folder, num_workers=8)
+
+    # Create the testing split
+    output_train_folder = os.path.join(output_path, "test")
+    train_set = PatchCamelyon(
+        input_path=input_path,
+        output_path=output_train_folder,
+        split="test",
+        download=download,
+    )
+    to_disk_folder_split(train_set, output_train_folder, num_workers=8)
 
 
 if __name__ == "__main__":
