@@ -29,6 +29,7 @@ cd $SOURCE
 # for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
 export NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_DEBUG=INFO
+#export NCCL_SOCKET_IFNAME=lo
 
 # to silence this error:
 # "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'

@@ -1,10 +1,9 @@
 #!/bin/bash
-#SBATCH -N 1
-#SBATCH -p gpu_titanrtx_short
-#SBATCH --gres=gpu:1
+#SBATCH -N 1 # number of nodes
+#SBATCH -p gpu_titanrtx
+#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
 #SBATCH --job-name=train_nct_dino
-#SBATCH --cpus-per-task=5
-#SBATCH -t 1:00:0
+#SBATCH -t 08:00:00
 #SBATCH --output=job_logs/slurm_output_%x_%j.out
 
 NUM_WORKERS=2
@@ -14,11 +13,11 @@ NUM_MACHINES=1
 TRAIN=train/
 SOURCE=$HOME/thesis/hissl
 SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
-CONFIG_PATH=blazej/train_dino
+CONFIG_PATH=blazej/pretrain/train_dino
 LOGS_DIR=hissl-logs
 EXPERIMENT_DIR=$HOME/thesis/$LOGS_DIR
 EXPERIMENT_DIR_CONTAINER=/$LOGS_DIR
-DATA_ROOT=$HOME"/thesis/ssl-histo/data/NCT-CRC-HE-100K"
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/nct"
 run_train()
 {
   echo "python3 tools/run_distributed_engines_hissl.py \
@@ -27,7 +26,8 @@ run_train()
     config.DATA.TRAIN.DATASET_NAMES=[nct] \
     config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
     config.DATA.TRAIN.DATA_PATHS=[\"$DATA_ROOT/train_images.npy\"] \
-    config.CHECKPOINT.DIR=$EXPERIMENT_DIR_CONTAINER/$SLURM_JOB_NAME/checkpoints/$SLURM_JOB_ID"
+    config.CHECKPOINT.DIR=$EXPERIMENT_DIR_CONTAINER/$SLURM_JOB_NAME/checkpoints/$SLURM_JOB_ID \
+    config.OPTIMIZER.num_epochs=100"
 }
 
 slurm_submit()
@@ -43,6 +43,10 @@ slurm_submit()
 }
 
 cd $SOURCE
+
+# for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
+export NCCL_ASYNC_ERROR_HANDLING=1
+export NCCL_DEBUG=INFO
 
 # to silence this error:
 # "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'
