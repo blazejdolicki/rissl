@@ -16,7 +16,7 @@ def convert_config(train_config, weights_path):
         "DISTRIBUTED": {},
         "MACHINE": {},
         "EXTRACT_FEATURES": {"OUTPUT_DIR": "",
-                           "CHUNK_THRESHOLD": 0}
+                             "CHUNK_THRESHOLD": 0}
     }}
 
     # indicate feature extraction
@@ -57,8 +57,8 @@ if __name__ == "__main__":
         train_config = yaml.load(f, Loader=yaml.FullLoader)
         pprint.pprint(train_config)
 
-    extract_config = convert_config(train_config, args.weights_path)
+    feat_extract_config = convert_config(train_config, args.weights_path)
 
     # save extraction yaml file
     with open(args.extract_config_path, 'w') as file:
-        yaml.dump(extract_config, file)
+        yaml.dump(feat_extract_config, file)
