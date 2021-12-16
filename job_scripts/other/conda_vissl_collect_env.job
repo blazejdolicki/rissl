@@ -1,0 +1,29 @@
+#!/bin/bash
+#SBATCH -N 2 #number of nodes
+#SBATCH -p gpu_titanrtx_short
+#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
+#SBATCH --job-name=train_nct_dino
+#SBATCH -t 1:00:0
+#SBATCH --output=ssl-histo/job_logs/slurm_output_%x_%j.out
+
+NUM_WORKERS=2
+NUM_GPUS=1
+NUM_TASKS=1
+NUM_MACHINES=1
+TRAIN=train/
+SOURCE=$HOME/thesis/hissl
+SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
+CONFIG_PATH=dummy/quick_gpu_resnet50_simclr
+LOGS_DIR=hissl-logs
+EXPERIMENT_DIR=$HOME/thesis/$LOGS_DIR
+EXPERIMENT_DIR_CONTAINER=/$LOGS_DIR
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/NCT-CRC-HE-100K"
+
+module load 2021
+module load Anaconda3/2021.05
+source activate thesis
+source activate vissl
+
+cd $HOME/thesis
+
+python collect_env.py
