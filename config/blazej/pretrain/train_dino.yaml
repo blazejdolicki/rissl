@@ -104,9 +104,9 @@ config:
           schedulers:
             - name: linear
               start_value: 0.00001
-              end_value: 0.002
+              end_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
             - name: cosine
-              start_value: 0.002
+              start_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
               end_value: 0.00001
           update_interval: epoch
           interval_scaling: [rescaled, fixed]
@@ -116,9 +116,9 @@ config:
           schedulers:
             - name: linear
               start_value: 0.00001
-              end_value: 0.002
+              end_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
             - name: cosine
-              start_value: 0.002
+              start_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
               end_value: 0.00001
           update_interval: epoch
           interval_scaling: [rescaled, fixed]
