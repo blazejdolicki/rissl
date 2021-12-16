@@ -30,7 +30,6 @@ config:
         - 0.225
     TRAIN:
       BATCHSIZE_PER_REPLICA: 64
-      COLLATE_FUNCTION: multicrop_collator
       COPY_DESTINATION_DIR: /tmp/imagenet1k/
       COPY_TO_LOCAL_DISK: false
       DATASET_NAMES:
@@ -101,11 +100,6 @@ config:
         - dims:
           - 384
           - 9
-    TEMP_FROZEN_PARAMS_ITER_MAP:
-    - - module.heads.0.prototypes0.weight_v
-      - 1251
-    - - module.heads.0.prototypes0.weight_g
-      - 1251
     TRUNK:
       NAME: vision_transformer
       VISION_TRANSFORMERS:
@@ -151,7 +145,7 @@ config:
     regularize_bn: true
     weight_decay: 0
   SEED_VALUE: 0
-  TEST_MODEL: false
+  TEST_MODEL: true
   TEST_ONLY: false
   TRAINER:
     TRAIN_STEP_NAME: standard_train_step
