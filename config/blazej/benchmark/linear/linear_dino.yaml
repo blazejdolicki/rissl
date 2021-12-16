@@ -1,0 +1,158 @@
+config:
+  CHECKPOINT:
+    AUTO_RESUME: true
+    CHECKPOINT_FREQUENCY: 1
+    DIR: .
+    OVERWRITE_EXISTING: true
+  DATA:
+    NUM_DATALOADER_WORKERS: 5
+    TEST:
+      BATCHSIZE_PER_REPLICA: 64
+      DATASET_NAMES:
+      - imagenet1k_folder
+      DATA_SOURCES:
+      - disk_folder
+      LABEL_TYPE: sample_index
+      TRANSFORMS:
+      - name: Resize
+        size: 256
+      - name: CenterCrop
+        size: 224
+      - name: ToTensor
+      - mean:
+        - 0.485
+        - 0.456
+        - 0.406
+        name: Normalize
+        std:
+        - 0.229
+        - 0.224
+        - 0.225
+    TRAIN:
+      BATCHSIZE_PER_REPLICA: 64
+      COLLATE_FUNCTION: multicrop_collator
+      COPY_DESTINATION_DIR: /tmp/imagenet1k/
+      COPY_TO_LOCAL_DISK: false
+      DATASET_NAMES:
+      - imagenet1k_folder
+      DATA_SOURCES:
+      - disk_folder
+      DROP_LAST: true
+      LABEL_TYPE: sample_index
+      MMAP_MODE: true
+      TRANSFORMS:
+      - name: RandomResizedCrop
+        size: 224
+      - name: RandomHorizontalFlip
+      - name: ToTensor
+      - mean:
+        - 0.485
+        - 0.456
+        - 0.406
+        name: Normalize
+        std:
+        - 0.229
+        - 0.224
+        - 0.225
+  DISTRIBUTED:
+    BACKEND: nccl
+    INIT_METHOD: tcp
+    NCCL_DEBUG: true
+    NUM_NODES: 1
+    NUM_PROC_PER_NODE: 4
+    RUN_ID: auto
+  HOOKS:
+    PERF_STATS:
+      MONITOR_PERF_STATS: true
+      PERF_STAT_FREQUENCY: 40
+      ROLLING_BTIME_FREQ: 5
+    TENSORBOARD_SETUP:
+      EXPERIMENT_LOG_DIR: tensorboard
+      FLUSH_EVERY_N_MIN: 5
+      LOG_DIR: .
+      LOG_PARAMS: true
+      LOG_PARAMS_EVERY_N_ITERS: 310
+      LOG_PARAMS_GRADIENTS: true
+      USE_TENSORBOARD: true
+  LOG_FREQUENCY: 10
+  LOSS:
+    cross_entropy_multiple_output_single_target:
+      ignore_index: -1
+    name: cross_entropy_multiple_output_single_target
+  MACHINE:
+    DEVICE: gpu
+  METERS:
+    accuracy_list_meter:
+      num_meters: 1
+      topk_values:
+      - 1
+      - 5
+    name: accuracy_list_meter
+  MODEL:
+    AMP_PARAMS:
+      AMP_TYPE: pytorch
+      USE_AMP: true
+    FEATURE_EVAL_SETTINGS:
+      EVAL_MODE_ON: true
+      FREEZE_TRUNK_ONLY: true
+    HEAD:
+      PARAMS:
+      - - mlp
+        - dims:
+          - 384
+          - 9
+    TEMP_FROZEN_PARAMS_ITER_MAP:
+    - - module.heads.0.prototypes0.weight_v
+      - 1251
+    - - module.heads.0.prototypes0.weight_g
+      - 1251
+    TRUNK:
+      NAME: vision_transformer
+      VISION_TRANSFORMERS:
+        ATTENTION_DROPOUT_RATE: 0
+        CLASSIFIER: token
+        DROPOUT_RATE: 0
+        DROP_PATH_RATE: 0.1
+        HIDDEN_DIM: 384
+        IMAGE_SIZE: 224
+        MLP_DIM: 1532
+        NUM_HEADS: 6
+        NUM_LAYERS: 12
+        PATCH_SIZE: 16
+        QKV_BIAS: true
+  MULTI_PROCESSING_METHOD: forkserver
+  OPTIMIZER:
+    momentum: 0.9
+    name: sgd
+    nesterov: false
+    num_epochs: 100
+    param_schedulers:
+      lr:
+        auto_lr_scaling:
+          auto_scale: true
+          base_lr_batch_size: 256
+          base_value: 0.1
+        interval_scaling:
+        - rescaled
+        - rescaled
+        lengths:
+        - 0.1
+        - 0.9
+        name: composite
+        schedulers:
+        - end_value: 0.1
+          name: linear
+          start_value: 0.0
+        - end_value: 0
+          name: cosine
+          start_value: 0.1
+        update_interval: step
+    regularize_bias: true
+    regularize_bn: true
+    weight_decay: 0
+  SEED_VALUE: 0
+  TEST_MODEL: false
+  TEST_ONLY: false
+  TRAINER:
+    TRAIN_STEP_NAME: standard_train_step
+  VERBOSE: false
