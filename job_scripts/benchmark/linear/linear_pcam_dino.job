@@ -1,0 +1,63 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p gpu_titanrtx
+#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
+#SBATCH --job-name=linear_pcam_dino
+#SBATCH -t 08:00:00
+#SBATCH --output=job_logs/slurm_output_%j_%x.out
+
+NUM_WORKERS=2
+NUM_GPUS=1
+NUM_TASKS=1
+NUM_MACHINES=1
+TRAIN=train/
+SOURCE=$HOME/thesis/hissl
+SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
+CONFIG_PATH=blazej/benchmark/linear/linear_dino
+LOGS_DIR=hissl-logs
+EXPERIMENT_DIR=$HOME/thesis/$LOGS_DIR
+EXPERIMENT_DIR_CONTAINER=/$LOGS_DIR
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/pcam"
+MODEL_WEIGHTS=$EXPERIMENT_DIR_CONTAINER"/train_nct_dino/checkpoints/8521997/model_phase40.torch"
+run_train()
+{
+  echo "python3 tools/run_distributed_engines_hissl.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH\
+    config.DATA.TRAIN.DATASET_NAMES=[pcam] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
+    config.DATA.TEST.DATASET_NAMES=[pcam] \
+    config.DATA.TEST.DATA_SOURCES=[disk_folder] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
+    config.CHECKPOINT.DIR=$EXPERIMENT_DIR_CONTAINER/$SLURM_JOB_NAME/checkpoints/$SLURM_JOB_ID \
+    config.OPTIMIZER.num_epochs=100 \
+    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS"
+}
+
+slurm_submit()
+{
+  SINGULARITYENV_VISSL_DATASET_CATALOG_PATH=/hissl/custom_catalog.json singularity exec --no-home --nv \
+      --bind $SOURCE:/hissl \
+      --bind $HOME/thesis/ssl-histo/config/blazej:/hissl/configs/config/blazej \
+      --bind $EXPERIMENT_DIR:$EXPERIMENT_DIR_CONTAINER \
+      --bind $DATA_ROOT \
+      --pwd /hissl \
+      $SINGULARITYIMAGE \
+      $COMMAND &
+}
+
+cd $SOURCE
+
+# for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
+export NCCL_ASYNC_ERROR_HANDLING=1
+export NCCL_DEBUG=INFO
+
+# to silence this error:
+# "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'
+# from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored."
+unset LD_PRELOAD
+
+COMMAND=$(run_train)
+
+echo $(slurm_submit $COMMAND)
