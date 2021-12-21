@@ -1,0 +1,7 @@
+# TODO: These are incomplete package requirements that I try do add as I go,
+# to make this repo easy to reproduce at the end.
+pillow # needed for `create_patch_camelyon_data_files.py`
+conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch # needed for `create_patch_camelyon_data_files.py`
+tqdm # needed for `create_patch_camelyon_data_files.py`
+vissl # needed for `create_patch_camelyon_data_files.py`
+h5py # needed for `create_patch_camelyon_data_files.py`
