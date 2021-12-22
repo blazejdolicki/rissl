@@ -4,9 +4,6 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--use_sample", action="store_true", help="Use sample of the dataset.")
-parser.add_argument("--sample_size", default=10,
-                    type=int, help="Size of the sampled datasets")
 parser.add_argument("--seed", default=7,
                     type=int, help="Random seed used to sample splits to enable reproducibility")
 

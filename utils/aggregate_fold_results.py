@@ -18,7 +18,6 @@ def plot_avg_acc(num_epochs, avg_accs_over_epochs, exp_path):
 
     plt.title("Average fold train and test accuracy over epochs")
     plt.ylabel("Accuracy")
-    plt.xticks(list(range(num_epochs)))
     plt.xlabel("Epochs")
     plt.legend()
 
