@@ -10,7 +10,7 @@ def list2str(param):
     :param param:
     :return:
     """
-    return str(param).replace("'", "") #.replace("[", "\[")
+    return str(param).replace("'", "")
 
 def convert_config(train_config, default_linear_config):
     """
@@ -22,7 +22,6 @@ def convert_config(train_config, default_linear_config):
     :return:generic configuration for linear evaluation
     """
     # initialize dict
-
 
     linear_config = train_config
 
@@ -79,6 +78,9 @@ def convert_config(train_config, default_linear_config):
     # set the accuracy meters
     linear_config["config"]["METERS"] = default_linear_config["config"]["METERS"]
 
+    # set high checkpoint freq to never save model checkpoints for linear evaluation
+    linear_config["config"]["CHECKPOINT"]["CHECKPOINT_FREQUENCY"] = 1000
+    linear_config["config"]["HOOKS"]["TENSORBOARD_SETUP"]["LOG_PARAMS"] = False
     return linear_config
 
 if __name__ == "__main__":
@@ -109,6 +111,10 @@ if __name__ == "__main__":
 
     linear_config = convert_config(train_config, default_linear_config)
 
-    # save extraction yaml file
+    print(f"Converting training config `{args.train_config_path}`")
+    print(f"into linear evaluation config `{linear_config_name}`")
+
+    # save linear yaml file
     with open(linear_config_name, 'w') as file:
         yaml.dump(linear_config, file)
+
