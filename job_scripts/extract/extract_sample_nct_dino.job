@@ -4,7 +4,7 @@
 #SBATCH --gpus-per-node=titanrtx:1 # use 4 GPUs in the node
 #SBATCH --job-name=extract_sample_nct_dino
 #SBATCH -t 08:00:00
-#SBATCH --output=job_logs/slurm_output_%j_%x.out
+#SBATCH --output=temp_logs/slurm_output_%j.out
 
 NUM_WORKERS=2
 NUM_GPUS=1
@@ -14,11 +14,10 @@ TRAIN=train/
 SOURCE=$HOME/thesis/hissl
 SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
 CONFIG_PATH=blazej/extract/extract_dino
-LOGS_DIR=hissl-logs
-EXPERIMENT_DIR=$HOME/thesis/$LOGS_DIR
-EXPERIMENT_DIR_CONTAINER=/$LOGS_DIR
+LOGS_DIR=/project/bdolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/$SLURM_JOB_NAME/$SLURM_JOB_ID
 DATA_ROOT=$HOME"/thesis/ssl-histo/data/nct"
-MODEL_WEIGHTS=$EXPERIMENT_DIR_CONTAINER"/train_nct_dino/checkpoints/8521997/model_phase40.torch"
+MODEL_WEIGHTS=$LOGS_DIR"/train_nct_dino/8521997/model_phase40.torch"
 
 #config.DATA.TRAIN.DATASET_NAMES=[nct_sample] \
 #    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
@@ -35,7 +34,7 @@ run_train()
     config.DATA.TRAIN.LABEL_SOURCES=[synthetic] \
     config.DATA.TEST.DATA_SOURCES=[synthetic] \
     config.DATA.TEST.LABEL_SOURCES=[synthetic] \
-    config.CHECKPOINT.DIR=$EXPERIMENT_DIR_CONTAINER/$SLURM_JOB_NAME/checkpoints/$SLURM_JOB_ID \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
     config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS"
 }
 
@@ -44,7 +43,7 @@ slurm_submit()
   SINGULARITYENV_VISSL_DATASET_CATALOG_PATH=/hissl/custom_catalog.json singularity exec --no-home --nv \
       --bind $SOURCE:/hissl \
       --bind $HOME/thesis/ssl-histo/config/blazej:/hissl/configs/config/blazej \
-      --bind $EXPERIMENT_DIR:$EXPERIMENT_DIR_CONTAINER \
+      --bind $LOGS_DIR \
       --bind $DATA_ROOT \
       --pwd /hissl \
       $SINGULARITYIMAGE \
@@ -65,3 +64,6 @@ unset LD_PRELOAD
 COMMAND=$(run_train)
 
 echo $(slurm_submit $COMMAND)
+
+# move slurm output from default location to logs after the job is finished
+mv ../ssl-histo/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
