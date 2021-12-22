@@ -1,7 +1,7 @@
 config:
   CHECKPOINT:
     AUTO_RESUME: true
-    CHECKPOINT_FREQUENCY: 1
+    CHECKPOINT_FREQUENCY: 1000
     DIR: .
     OVERWRITE_EXISTING: true
   DATA:
@@ -69,7 +69,7 @@ config:
       EXPERIMENT_LOG_DIR: tensorboard
       FLUSH_EVERY_N_MIN: 5
       LOG_DIR: .
-      LOG_PARAMS: true
+      LOG_PARAMS: false
       LOG_PARAMS_EVERY_N_ITERS: 310
       LOG_PARAMS_GRADIENTS: true
       USE_TENSORBOARD: true
