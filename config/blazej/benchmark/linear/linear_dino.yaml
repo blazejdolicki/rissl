@@ -74,10 +74,6 @@ config:
       LOG_PARAMS_GRADIENTS: true
       USE_TENSORBOARD: true
   LOG_FREQUENCY: 10
-  LOSS:
-    cross_entropy_multiple_output_single_target:
-      ignore_index: -1
-    name: cross_entropy_multiple_output_single_target
   MACHINE:
     DEVICE: gpu
   METERS:
@@ -85,7 +81,6 @@ config:
       num_meters: 1
       topk_values:
       - 1
-      - 5
     name: accuracy_list_meter
   MODEL:
     AMP_PARAMS:
@@ -94,12 +89,6 @@ config:
     FEATURE_EVAL_SETTINGS:
       EVAL_MODE_ON: true
       FREEZE_TRUNK_ONLY: true
-    HEAD:
-      PARAMS:
-      - - mlp
-        - dims:
-          - 384
-          - 9
     TRUNK:
       NAME: vision_transformer
       VISION_TRANSFORMERS:

@@ -1,0 +1,11 @@
+# @package _global_
+config: # classification for NCT (9 classes)
+  LOSS:
+    cross_entropy_multiple_output_single_target:
+      ignore_index: -1
+    name: cross_entropy_multiple_output_single_target
+  MODEL:
+    HEAD:
+      PARAMS: [
+        ["mlp", {"dims": [384, 9]}]
+      ]

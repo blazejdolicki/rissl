@@ -13,7 +13,7 @@ NUM_MACHINES=1
 TRAIN=train/
 SOURCE=$HOME/thesis/hissl
 SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
-CONFIG_PATH=blazej/benchmark/linear/linear_dino
+CONFIG_PATH=blazej/benchmark/linear
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/$SLURM_JOB_NAME/$SLURM_JOB_ID
 DATA_ROOT=$HOME"/thesis/ssl-histo/data/bach"
@@ -23,7 +23,8 @@ run_train()
 {
   echo "python3 tools/run_distributed_engines_hissl.py \
     hydra.verbose=true \
-    config=$CONFIG_PATH\
+    config=$CONFIG_PATH/linear_dino \
+    +config/$CONFIG_PATH=bach_head.yaml \
     config.DATA.TRAIN.DATASET_NAMES=[bach] \
     config.DATA.TRAIN.DATA_PATHS=[\"$DATA_ROOT/train_images_fold$fold.npy\"] \
     config.DATA.TRAIN.LABEL_PATHS=[\"$DATA_ROOT/train_labels_fold$fold.npy\"] \
@@ -34,7 +35,7 @@ run_train()
     config.DATA.TEST.LABEL_PATHS=[\"$DATA_ROOT/val_labels_fold$fold.npy\"] \
     config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
     config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
-    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR/fold$fold \
     config.OPTIMIZER.num_epochs=100 \
     config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS"
 }

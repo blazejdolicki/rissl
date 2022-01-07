@@ -2,7 +2,7 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p gpu_titanrtx
 #SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
-#SBATCH --job-name=linear_pcam_dino
+#SBATCH --job-name=linear_breakhis_dino
 #SBATCH -t 08:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 
@@ -16,24 +16,23 @@ SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
 CONFIG_PATH=blazej/benchmark/linear
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/$SLURM_JOB_NAME/$SLURM_JOB_ID
-DATA_ROOT=$HOME"/thesis/ssl-histo/data/pcam"
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/breakhis"
 MODEL_WEIGHTS=$LOGS_DIR"/train_nct_dino/8521997/model_phase40.torch"
-
 run_train()
 {
   echo "python3 tools/run_distributed_engines_hissl.py \
     hydra.verbose=true \
     config=$CONFIG_PATH/linear_dino \
     +config/$CONFIG_PATH=bc_head.yaml \
-    config.DATA.TRAIN.DATASET_NAMES=[pcam] \
-    config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
-    config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
-    config.DATA.TEST.DATASET_NAMES=[pcam] \
-    config.DATA.TEST.DATA_SOURCES=[disk_folder] \
-    config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
+    config.DATA.TRAIN.DATASET_NAMES=[breakhis] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.DATASET_NAMES=[breakhis] \
+    config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
     config.OPTIMIZER.num_epochs=100 \
-    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS"
+    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS "
 }
 
 slurm_submit()
