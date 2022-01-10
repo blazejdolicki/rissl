@@ -1,0 +1,71 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p gpu
+#SBATCH --gres=gpu:1
+#SBATCH --job-name=knn_breakhis_dino
+#SBATCH -t 01:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+
+NUM_WORKERS=2
+NUM_GPUS=1
+NUM_TASKS=1
+NUM_MACHINES=1
+TRAIN=train/
+SOURCE=$HOME/thesis/hissl
+SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
+CONFIG_PATH=blazej/benchmark/knn
+LOGS_DIR=/project/bdolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/knn/$SLURM_JOB_NAME/$SLURM_JOB_ID
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/breakhis"
+MODEL_WEIGHTS=$LOGS_DIR"/train_nct_dino/8521997/model_phase40.torch"
+run_train()
+{
+  echo "python3 tools/nearest_neighbor_test.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH/knn_dino \
+    config.DATA.TRAIN.DATASET_NAMES=[breakhis] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.DATASET_NAMES=[breakhis] \
+    config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS "
+}
+
+#python tools/nearest_neighbor_test.py config=benchmark/knn/eval_resnet_8gpu_places205_kNN \
+#  config.MODEL.WEIGHTS_INIT.PARAMS_FILE=<my_weights.torch>
+
+slurm_submit()
+{
+  SINGULARITYENV_VISSL_DATASET_CATALOG_PATH=/hissl/custom_catalog.json singularity exec --no-home --nv \
+      --bind $SOURCE:/hissl \
+      --bind $HOME/thesis/ssl-histo/config/blazej:/hissl/configs/config/blazej \
+      --bind $LOGS_DIR \
+      --bind $DATA_ROOT \
+      --pwd /hissl \
+      $SINGULARITYIMAGE \
+      $COMMAND &
+}
+
+cd $SOURCE
+
+# for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
+export NCCL_ASYNC_ERROR_HANDLING=1
+export NCCL_DEBUG=INFO
+
+# to silence this error:
+# "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'
+# from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored."
+unset LD_PRELOAD
+
+COMMAND=$(run_train)
+
+echo $(slurm_submit $COMMAND)
+
+# move slurm output from default location to logs after the job is finished
+mv ../ssl-histo/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+
+
+
+
