@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_titanrtx_shared
+#SBATCH --job-name=build_sif
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --time=05:00:00
+#SBATCH --mem=60000M
+#SBATCH --output=slurm_output_%x_%j.out
+
+cd $HOME/thesis
+
+singularity build hissl_20220117_seaborn_plotly.sif hissl_plot2/
+
