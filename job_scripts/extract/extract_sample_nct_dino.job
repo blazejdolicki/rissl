@@ -17,7 +17,7 @@ CONFIG_PATH=blazej/extract/extract_dino
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/$SLURM_JOB_NAME/$SLURM_JOB_ID
 DATA_ROOT=$HOME"/thesis/ssl-histo/data/nct"
-MODEL_WEIGHTS=$LOGS_DIR"/train_nct_dino/8521997/model_phase40.torch"
+MODEL_WEIGHTS=$LOGS_DIR"/train_nct_dino/8521997/model_phase2.torch"
 
 #config.DATA.TRAIN.DATASET_NAMES=[nct_sample] \
 #    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
@@ -30,10 +30,12 @@ run_train()
   echo "python3 tools/run_distributed_engines.py \
     hydra.verbose=true \
     config=$CONFIG_PATH\
-    config.DATA.TRAIN.DATA_SOURCES=[synthetic] \
-    config.DATA.TRAIN.LABEL_SOURCES=[synthetic] \
-    config.DATA.TEST.DATA_SOURCES=[synthetic] \
-    config.DATA.TEST.LABEL_SOURCES=[synthetic] \
+    config.DATA.TRAIN.DATASET_NAMES=[nct_sample] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.DATASET_NAMES=[nct_sample] \
+    config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
     config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS"
 }
