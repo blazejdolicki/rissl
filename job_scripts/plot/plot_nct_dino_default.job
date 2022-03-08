@@ -1,0 +1,65 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p gpu_titanrtx
+#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
+#SBATCH --job-name=plot_nct_dino
+#SBATCH -t 10:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+
+NUM_WORKERS=2
+NUM_GPUS=1
+NUM_TASKS=1
+NUM_MACHINES=1
+TRAIN=train/
+SOURCE=$HOME/thesis/hissl
+SINGULARITYIMAGE=$HOME/thesis/hissl_20220117_seaborn_plotly.sif #hissl_seaborn2.sif
+CONFIG_PATH=blazej/benchmark/knn
+LOGS_DIR=/project/bdolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/plot/$SLURM_JOB_NAME/$SLURM_JOB_ID
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/nct"
+MODEL_WEIGHTS_DIR=$LOGS_DIR"/train_nct_dino/8641787"  # 8641787 - 3 epochs, 8521997 - 70 epochs
+PLOT_METHOD="pca"
+run_train()
+{ #echo "python3 test.py"
+  echo "python3 tools/plot_features.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH/knn_dino \
+    config.DATA.TRAIN.DATASET_NAMES=[nct_sample] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.DATASET_NAMES=[nct_sample] \
+    config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+    +config.MODEL.WEIGHTS_INIT.FOLDER=$MODEL_WEIGHTS_DIR"
+}
+
+slurm_submit()
+{
+  SINGULARITYENV_VISSL_DATASET_CATALOG_PATH=/hissl/custom_catalog.json singularity exec --no-home --nv \
+      --bind $SOURCE:/hissl \
+      --bind $HOME/thesis/ssl-histo/config/blazej:/hissl/configs/config/blazej \
+      --bind $LOGS_DIR \
+      --bind $DATA_ROOT \
+      --pwd /hissl \
+      $SINGULARITYIMAGE \
+      $COMMAND &
+}
+
+cd $SOURCE
+
+# for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
+export NCCL_ASYNC_ERROR_HANDLING=1
+export NCCL_DEBUG=INFO
+
+# to silence this error:
+# "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'
+# from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored."
+unset LD_PRELOAD
+
+COMMAND=$(run_train)
+
+echo $(slurm_submit $COMMAND)
+
+# move slurm output from default location to logs after the job is finished
+mv ../ssl-histo/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
