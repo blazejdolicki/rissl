@@ -59,7 +59,7 @@ config:
     INIT_METHOD: tcp
     NCCL_DEBUG: true
     NUM_NODES: 1
-    NUM_PROC_PER_NODE: 1 # single GPU is enough for KNN
+    NUM_PROC_PER_NODE: 4 # 4 GPUs
     RUN_ID: auto
   HOOKS:
     PERF_STATS:

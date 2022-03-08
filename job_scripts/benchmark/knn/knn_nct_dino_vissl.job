@@ -1,0 +1,46 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p gpu_titanrtx
+#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
+#SBATCH --job-name=knn_nct_dino
+#SBATCH -t 08:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+
+NUM_WORKERS=2
+NUM_GPUS=1
+NUM_TASKS=1
+NUM_MACHINES=1
+TRAIN=train/
+SOURCE=$HOME/thesis/hissl
+SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
+CONFIG_PATH=blazej/benchmark/nearest_neighbor
+LOGS_DIR=/project/bdolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/$SLURM_JOB_NAME/$SLURM_JOB_ID
+DATA_ROOT=$HOME"/thesis/ssl-histo/data/nct"
+MODEL_WEIGHTS=$LOGS_DIR"/train_nct_dino/8521997/model_phase40.torch"
+
+module load 2021
+module load Anaconda3/2021.05
+source activate thesis
+source activate vissl
+
+cd $SOURCE
+
+python3 tools/nearest_neighbor_test.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH/knn_dino \
+    config.DATA.TRAIN.DATASET_NAMES=[nct] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.DATA_PATHS=[\"$DATA_ROOT/train_images.npy\"] \
+    +config.DATA.TRAIN.LABEL_PATHS=[\"$DATA_ROOT/train_labels.npy\"] \
+    config.DATA.TEST.DATASET_NAMES=[nct] \
+    config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.DATA_PATHS=[\"$DATA_ROOT/valid_images.npy\"] \
+    +config.DATA.TEST.LABEL_PATHS=[\"$DATA_ROOT/valid_labels.npy\"] \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+    config.OPTIMIZER.num_epochs=100 \
+    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS
+
+
