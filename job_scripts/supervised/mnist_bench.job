@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_titanrtx
+#SBATCH --job-name=mnist_bench
+#SBATCH --gpus-per-node=gtx1080ti:0
+#SBATCH --ntasks=1
+#SBATCH --time=10:00:00
+#SBATCH --output=slurm_output_%x_%j.out
+
+module load 2021
+module load Anaconda3/2021.05
+
+source activate e2exp
+cd $HOME/thesis/e2cnn_experiments/experiments
+
+bash mnist_bench.sh
+
+echo "finished"
+
