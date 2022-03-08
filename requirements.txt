@@ -5,3 +5,5 @@ conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch # neede
 tqdm # needed for `create_patch_camelyon_data_files.py`
 vissl # needed for `create_patch_camelyon_data_files.py`
 h5py # needed for `create_patch_camelyon_data_files.py`
+umap-learn
+matplotlib # for plotting results
