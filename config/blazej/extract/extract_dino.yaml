@@ -63,6 +63,9 @@ config:
       EXTRACT_TRUNK_FEATURES_ONLY: true
       FREEZE_TRUNK_ONLY: True
       SHOULD_FLATTEN_FEATS: False
+      LINEAR_EVAL_FEAT_POOL_OPS_MAP: [
+        ["norm", ["Identity", []]],
+      ]
     TRUNK:
       NAME: vision_transformer
       VISION_TRANSFORMERS:
