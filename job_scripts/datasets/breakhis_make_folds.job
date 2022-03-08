@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#SBATCH --partition=normal
+#SBATCH --job-name=breakhis_make_folds
+#SBATCH --gpus-per-node=gpu:0
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --time=1:00:00
+#SBATCH --mem=32000M
+#SBATCH --output=temp_logs/slurm_output_%x_%j.out
+
+cd $HOME/thesis/ssl-histo/data/breakhis
+
+python mkfold.py
+
+echo "finished"
+
