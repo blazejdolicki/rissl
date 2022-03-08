@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_titanrtx_short
+#SBATCH --job-name=download_mnist
+#SBATCH --gpus-per-node=gtx1080ti:0
+#SBATCH --ntasks=1
+#SBATCH --time=01:00:00
+#SBATCH --output=slurm_output_%x_%j.out
+
+cd $HOME/thesis/e2cnn_experiments/experiments/datasets
+
+bash download_mnist.sh
+
+echo "finished"
+
