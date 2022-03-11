@@ -73,7 +73,13 @@ if __name__ == "__main__":
     model = archs[args.model_type](**model_args).to(device)
 
     criterion = torch.nn.BCEWithLogitsLoss()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
+                                                    max_lr=args.max_lr,
+                                                    div_factor=args.max_lr/args.start_lr,  # div_factor = max_lr / start_lr
+                                                    final_div_factor=args.start_lr/args.end_lr, # final_div_factor = start_lr / end_lr
+                                                    steps_per_epoch=len(train_loader),
+                                                    epochs=args.num_epochs)
 
     tb_path = os.path.join(args.log_dir, "tb_logs")
     os.makedirs(tb_path)

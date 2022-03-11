@@ -51,7 +51,9 @@ def parse_args(parser):
     parser.add_argument('--num_workers', type=int, default=0, help="Number of workers used to load the data")
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--model_type', type=str, default='resnet18', help='Model architecture')
-    parser.add_argument('--lr', type=float, default=0.001, help="Learning rate")
+    parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")
+    parser.add_argument('--start_lr', type=float, default=0.001, help="Initial learning rate at the start")
+    parser.add_argument('--end_lr', type=float, default=0.001, help="Final learning rate at the end")
     parser.add_argument('--momentum', type=float, default=0.9, help="Momentum of stochastic gradient descent")
     parser.add_argument('--num_epochs', type=int, default=2, help='Number of training epochs')
 
