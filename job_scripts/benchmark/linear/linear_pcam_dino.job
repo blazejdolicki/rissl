@@ -6,11 +6,7 @@
 #SBATCH -t 08:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 
-NUM_WORKERS=2
-NUM_GPUS=1
-NUM_TASKS=1
-NUM_MACHINES=1
-TRAIN=train/
+
 SOURCE=$HOME/thesis/hissl
 SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
 CONFIG_PATH=blazej/benchmark/linear

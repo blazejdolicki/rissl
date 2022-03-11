@@ -1,10 +1,15 @@
 #!/bin/bash
 #SBATCH -N 1 # number of nodes
-#SBATCH -p gpu_titanrtx
-#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
+#SBATCH --partition=gpu_titanrtx
+#SBATCH --gpus-per-node=titanrtx:4
 #SBATCH --job-name=linear_breakhis_dino
-#SBATCH -t 08:00:00
+#SBATCH -t 01:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
+#SBATCH --exclusive
+
+
+# [commented out] SBATCH -p gpu_titanrtx
+# [commented out] SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
 
 NUM_WORKERS=2
 NUM_GPUS=1
@@ -15,11 +20,30 @@ SOURCE=$HOME/thesis/hissl
 SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
 CONFIG_PATH=blazej/benchmark/linear
 LOGS_DIR=/project/bdolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/$SLURM_JOB_NAME/$SLURM_JOB_ID
-DATA_ROOT=$HOME"/thesis/ssl-histo/data/breakhis"
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/$SLURM_JOB_NAME/$SLURM_JOB_ID
+DATA_HOME_DIR=$HOME"/thesis/ssl-histo/data/breakhis"
+DATA_SCRATCH_DIR="$TMPDIR"/"data/breakhis"
 MODEL_WEIGHTS=$LOGS_DIR"/train_nct_dino/8521997/model_phase40.torch"
+
+# Copy data to scratch
+mkdir -p $DATA_SCRATCH_DIR
+start_time=$(date '+%B %V %T')
+echo "${start_time}:Copying data from $DATA_HOME_DIR to scratch..."
+
+# Note: If the source directory has a trailing slash, rsync will copy only the directory
+# contents to the destination directory. When the trailing slash is omitted, rsync copies the source
+# directory inside the destination directory.
+
+rsync -az $DATA_HOME_DIR/ $DATA_SCRATCH_DIR # add -v option for verbose
+end_time=$(date '+%B %V %T')
+echo "${end_time}: Finished copying data to scratch..."
+
+REMOVE_IMG_PATH_PREFIX=$DATA_HOME_DIR
+NEW_IMG_PATH_PREFIX=$DATA_SCRATCH_DIR
+
 run_train()
 {
+#   echo "ls /scratch/"
   echo "python3 tools/run_distributed_engines_hissl.py \
     hydra.verbose=true \
     config=$CONFIG_PATH/linear_dino \
@@ -27,12 +51,18 @@ run_train()
     config.DATA.TRAIN.DATASET_NAMES=[breakhis] \
     config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
     config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$REMOVE_IMG_PATH_PREFIX \
+    config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX
     config.DATA.TEST.DATASET_NAMES=[breakhis] \
     config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
     config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.REMOVE_IMG_PATH_PREFIX=$REMOVE_IMG_PATH_PREFIX \
+    config.DATA.TEST.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-    config.OPTIMIZER.num_epochs=100 \
-    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS "
+    config.OPTIMIZER.num_epochs=3 \
+    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
+    config.DISTRIBUTED.NUM_PROC_PER_NODE=4
+    "
 }
 
 slurm_submit()
@@ -41,7 +71,7 @@ slurm_submit()
       --bind $SOURCE:/hissl \
       --bind $HOME/thesis/ssl-histo/config/blazej:/hissl/configs/config/blazej \
       --bind $LOGS_DIR \
-      --bind $DATA_ROOT \
+      --bind "$TMPDIR" \
       --pwd /hissl \
       $SINGULARITYIMAGE \
       $COMMAND &
@@ -52,6 +82,7 @@ cd $SOURCE
 # for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
 export NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_DEBUG=INFO
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 # to silence this error:
 # "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'
