@@ -10,29 +10,26 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 import os
 from tqdm import tqdm
+import mlflow
+import random
 
-from breakhis_dataset import BreakhisDataset
-from utils import setup_logging
+from datasets.breakhis_fold_dataset import BreakhisFoldDataset
+from datasets.breakhis_dataset import BreakhisDataset
+from utils import setup_logging, parse_args, fix_seed
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data/breakhis',
-                        help='Directory of the data')
-    parser.add_argument('--fold', type=int, default=1, choices=[1, 2, 3, 4, 5], help='Fold used for training and testing')
-    parser.add_argument('--train_mag', type=str, default=40, choices=["40", "100", "200", "400"],
-                        help='Magnitude of training images')
-    parser.add_argument('--test_mag', type=str, default=40, choices=["40", "100", "200", "400"],
-                        help='Magnitude of testing images')
-    parser.add_argument('--num_workers', type=int, default=0, help="Number of workers used to load the data")
-    parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
-    parser.add_argument('--model_type', type=str, default='resnet18', help='Model architecture')
-    parser.add_argument('--lr', type=float, default=0.001, help="Learning rate")
-    parser.add_argument('--momentum', type=float, default=0.9, help="Momentum of stochastic gradient descent")
-    parser.add_argument('--num_epochs', type=int, default=2, help='Number of training epochs')
+    args = parse_args(parser)
 
-    parser.add_argument('--seed', type=int, default=7, help='Random seed')
-    parser.add_argument('--output_dir', type=str, default="logs", help='Output directory for logging')
-    args = parser.parse_args()
+    job_id = args.log_dir.split("/")[-1]
+    mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
+    mlflow.set_experiment(args.exp_name)
+    mlflow.start_run(run_name=job_id)
+    mlflow.log_params(vars(args))
+    setup_logging(args.log_dir)
+
+    # fix seed
+    fix_seed(args.seed)
 
     # binary classification
     archs = {"resnet18": models.resnet18,
@@ -43,20 +40,11 @@ if __name__ == "__main__":
              "resnext50_32x4d": models.resnext50_32x4d,
              "resnext101_32x8d": models.resnext101_32x8d,
              "wide_resnet50_2": models.wide_resnet50_2,
-             "wide_resnet101_2": models.wide_resnet101_2
+             "wide_resnet101_2": models.wide_resnet101_2,
              }
 
     assert args.model_type in archs, \
         f"Model {args.model_type} is not supported. Choose one of the following models: {list(archs.keys())}"
-
-    setup_logging(args.output_dir)
-
-    # fix seed
-    logging.info(f"Random seed: {args.seed}")
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
 
     # same transforms as for supervised equivariant networks
     transform = transforms.Compose([transforms.Resize(256),
@@ -66,8 +54,12 @@ if __name__ == "__main__":
                                                          std=[0.229, 0.224, 0.225]),
                                     ])
 
-    train_dataset = BreakhisDataset(args.data_dir, "train", args.fold, args.train_mag, transform)
-    test_dataset = BreakhisDataset(args.data_dir, "test", args.fold, args.test_mag, transform)
+    if args.dataset == "breakhis_fold":
+        train_dataset = BreakhisFoldDataset(args.data_dir, "train", args.fold, args.train_mag, transform)
+        test_dataset = BreakhisFoldDataset(args.data_dir, "test", args.fold, args.test_mag, transform)
+    elif args.dataset == "breakhis":
+        train_dataset = BreakhisDataset(args.data_dir, "train", transform)
+        test_dataset = BreakhisDataset(args.data_dir, "test", transform)
 
     logging.info(f"Train size {len(train_dataset)}, test size {len(test_dataset)}")
 
@@ -83,7 +75,13 @@ if __name__ == "__main__":
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
-    writer = SummaryWriter(log_dir=os.path.join(args.output_dir, "tb_logs"))
+    tb_path = os.path.join(args.log_dir, "tb_logs")
+    os.makedirs(tb_path)
+    writer = SummaryWriter(log_dir=tb_path)
+
+    if args.early_stopping:
+        best_test_loss = 1000
+        best_test_epoch = 0
 
     for epoch_idx in tqdm(range(args.num_epochs)):  # loop over the dataset multiple times
         logging.info(f"Epoch {epoch_idx}")
@@ -109,7 +107,7 @@ if __name__ == "__main__":
 
             batch_loss.backward()
             optimizer.step()
-            # log metrics
+
             train_epoch_loss += batch_size * batch_loss.item()
             total += batch_size
             # Note: for label equal to 1, we want outputs of the sigmoid to be above 0.5
@@ -155,6 +153,14 @@ if __name__ == "__main__":
         writer.add_scalar("test/epoch_acc", test_epoch_acc, epoch_idx)
         logging.info(f"Train loss: \t{train_epoch_loss}, train acc: \t{train_epoch_acc}")
         logging.info(f"Test loss: \t{test_epoch_loss}, test acc: \t{test_epoch_acc}")
+
+        if args.early_stopping:
+            if test_epoch_loss > best_test_loss:
+                best_test_loss = test_epoch_loss
+                best_test_epoch = epoch_idx
+            elif epoch_idx - best_test_epoch >= args.patience:
+                logging.info(f"Early stopping at epoch {epoch_idx} - test loss haven't improved for {args.patience} epochs")
+                break
 
     writer.close()
     logging.info('Finished training')
