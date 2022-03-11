@@ -4,12 +4,16 @@ import os
 from PIL import Image
 from torchvision.io import read_image
 from PIL import Image
+from datasets.breakhis_dataset import BreakhisDataset
 
-class BreakhisDataset(Dataset):
+
+class BreakhisFoldDataset(BreakhisDataset):
     """
-    BreakHis includes 7909 patches of size 700 ×460 pixels taken from WSIs of breast tumor tissue.
-    The data is labelled as either benign or malignant, and images belong to one of four magnifying
-    factors (40x, 100x, 200x and 400x).
+    BreakhisFoldDataset contains 5 train/test folds from the original paper such that all images from the same patient
+    are in the same fold. This class is used for scale-related experiments (TODO: add name of relevant section in paper).
+    It allows selecting specific magnitudes and is initialized by reading image names from folders with the structure
+    described below.
+
     Directory tree:
     <root_dir>/
         fold1/
@@ -32,18 +36,3 @@ class BreakhisDataset(Dataset):
         self.labels = [self.get_label(img) for img in os.listdir(mag_dir)]
         self.transform = transform
 
-    def __len__(self):
-        return len(self.imgs)
-
-    def __getitem__(self, idx):
-        img = Image.open(self.imgs[idx])
-        label = self.labels[idx]
-
-        if self.transform is not None:
-            img = self.transform(img)
-
-        return img, label
-
-    def get_label(self, img):
-        label_str = img.split('-')[0].split('_')[1]
-        return self.label2int[label_str]
