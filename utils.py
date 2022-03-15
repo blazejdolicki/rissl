@@ -42,7 +42,6 @@ def parse_args(parser):
                         help='Directory of the data')
     parser.add_argument('--exp_name', type=str, default="Default",
                         help='MLFlow experiment folder where the results will be logged')
-    parser.add_argument('--mag_exp', action="store_true", help='Use Breakhis split by magnitudes.')
     parser.add_argument('--fold', type=int, default=1, choices=[1, 2, 3, 4, 5], help='Fold used for training and testing')
     parser.add_argument('--train_mag', type=str, choices=["40", "100", "200", "400"],
                         help='Magnitude of training images')
