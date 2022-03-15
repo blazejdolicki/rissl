@@ -52,14 +52,18 @@ def parse_args(parser):
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--model_type', type=str, default='resnet18', help='Model architecture')
     parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")
-    parser.add_argument('--start_lr', type=float, default=0.001, help="Initial learning rate at the start")
-    parser.add_argument('--end_lr', type=float, default=0.001, help="Final learning rate at the end")
+    parser.add_argument('--start_lr', type=float, default=None, help="Initial learning rate at the start")
+    parser.add_argument('--end_lr', type=float, default=None, help="Final learning rate at the end")
+    parser.add_argument('--lr_pct_start', type=float, default=None,
+                        help='The percentage of the cycle (in number of steps) spent increasing the learning rate.')
+    parser.add_argument('--lr_warmup', type=int, default=None,
+                        help='Number of epochs spent increasing the learning rate from initial learning rate to its maximum value.')
     parser.add_argument('--momentum', type=float, default=0.9, help="Momentum of stochastic gradient descent")
     parser.add_argument('--num_epochs', type=int, default=2, help='Number of training epochs')
 
     parser.add_argument('--seed', type=int, default=7, help='Random seed')
     parser.add_argument('--early_stopping', action="store_false", help="Use early stopping")
-    parser.add_argument('--patience', type=int, default=10, help="Number of epochs without improvement required for early stopping")
+    parser.add_argument('--patience', type=int, default=20, help="Number of epochs without improvement required for early stopping")
     parser.add_argument("--log_dir", type=str, default="logs",
                         help="Directory with logs: checkpoints, parameters, metrics")
     parser.add_argument("--mlflow_dir", type=str, default="/project/bdolicki/mlflow_runs",
