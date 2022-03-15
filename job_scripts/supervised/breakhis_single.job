@@ -4,9 +4,12 @@
 #SBATCH --partition=gpu_titanrtx_shared
 #SBATCH --job-name=breakhis
 #SBATCH --gpus-per-node=titanrtx:1
-#SBATCH --time=02:00:00
+#SBATCH --time=5:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --nodelist=r29n2
+
+# GPU node r29n5 seems to be weirdly slow
+
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
@@ -17,7 +20,7 @@ source activate e2cnn
 cd $HOME/thesis/ssl-histo/
 mkdir -p $CHECKPOINT_DIR
 
-python train.py --dataset breakhis --log_dir $CHECKPOINT_DIR
+python train.py --dataset breakhis --log_dir $CHECKPOINT_DIR --num_epochs 100
 
 echo "finished"
 
