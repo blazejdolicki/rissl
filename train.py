@@ -21,6 +21,26 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = parse_args(parser)
 
+    # if start_lr and end_lr not provided, set them based on max_lr with multipliers
+    # which empirically worked relatively well
+    if args.start_lr is None:
+        args.start_lr = args.max_lr / 10.0
+    if args.end_lr is None:
+        args.end_lr = args.max_lr / 100.0
+
+    # 4 possible cases for lr_warmup and lr_pct_start
+    # Case 1: both unspecified - use default lr_pct_start
+    # Case 2: lr_warmup specified, lr_pct_start unspecified - use lr_pct_start = lr_warmup/num_epochs
+    # Case 3: lr_warmup unspecified, lr_pct_start specified - use lr_pct_start
+    # Case 4: both specified - override lr_pct_start and set lr_pct_start = lr_warmup/num_epochs
+    if args.lr_warmup is not None:
+        if args.lr_pct_start is not None:
+            logging.warning(f"Both arguments `lr_warmup` and `pct_start` specified. Setting `pct_start` as pct_start = lr_warmup/num_epochs.")
+        args.lr_pct_start = args.lr_warmup / args.num_epochs
+    elif args.lr_pct_start is None:
+        args.lr_pct_start = 0.3
+
+
     job_id = args.log_dir.split("/")[-1]
     mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
     mlflow.set_experiment(args.exp_name)
@@ -74,10 +94,12 @@ if __name__ == "__main__":
 
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum)
+
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
                                                     max_lr=args.max_lr,
                                                     div_factor=args.max_lr/args.start_lr,  # div_factor = max_lr / start_lr
                                                     final_div_factor=args.start_lr/args.end_lr, # final_div_factor = start_lr / end_lr
+                                                    pct_start=args.lr_pct_start,
                                                     steps_per_epoch=len(train_loader),
                                                     epochs=args.num_epochs)
 
@@ -86,7 +108,8 @@ if __name__ == "__main__":
     writer = SummaryWriter(log_dir=tb_path)
 
     if args.early_stopping:
-        best_test_loss = 1000
+        best_test_loss = 1000.0
+        best_test_acc = 0.0
         best_test_epoch = 0
 
     for epoch_idx in tqdm(range(args.num_epochs)):  # loop over the dataset multiple times
@@ -97,7 +120,7 @@ if __name__ == "__main__":
         train_epoch_loss = 0.0
         correct = 0.0
         total = 0
-        for idx, batch in enumerate(train_loader):
+        for batch_idx, batch in enumerate(train_loader):
             inputs, labels = batch
             batch_size = inputs.shape[0]
 
@@ -114,6 +137,10 @@ if __name__ == "__main__":
             batch_loss.backward()
             optimizer.step()
 
+            global_step = epoch_idx * len(train_loader) + batch_idx
+            writer.add_scalar("learning_rate/lr_per_batch", optimizer.param_groups[0]["lr"], global_step)
+            scheduler.step()
+
             train_epoch_loss += batch_size * batch_loss.item()
             total += batch_size
             # Note: for label equal to 1, we want outputs of the sigmoid to be above 0.5
@@ -129,6 +156,7 @@ if __name__ == "__main__":
 
         writer.add_scalar("train/epoch_loss", train_epoch_loss, epoch_idx)
         writer.add_scalar("train/epoch_acc", train_epoch_acc, epoch_idx)
+        writer.add_scalar("learning_rate/lr_per_epoch", optimizer.param_groups[0]["lr"], epoch_idx)
 
         test_epoch_loss = 0.0
         test_correct = 0.0
@@ -160,13 +188,20 @@ if __name__ == "__main__":
         logging.info(f"Train loss: \t{train_epoch_loss}, train acc: \t{train_epoch_acc}")
         logging.info(f"Test loss: \t{test_epoch_loss}, test acc: \t{test_epoch_acc}")
 
-        if args.early_stopping:
-            if test_epoch_loss > best_test_loss:
-                best_test_loss = test_epoch_loss
-                best_test_epoch = epoch_idx
-            elif epoch_idx - best_test_epoch >= args.patience:
-                logging.info(f"Early stopping at epoch {epoch_idx} - test loss haven't improved for {args.patience} epochs")
-                break
+        # set new best loss and epoch
+        if test_epoch_loss < best_test_loss:
+            best_test_loss = test_epoch_loss
+            best_test_acc = test_epoch_acc
+            best_test_epoch = epoch_idx
+        # if using early stopping, end when loss didn't improve for n epochs
+        elif args.early_stopping and epoch_idx - best_test_epoch >= args.patience:
+            logging.info(f"Early stopping at epoch {epoch_idx} - test loss haven't improved for {args.patience} epochs")
+            break
+
+    mlflow.log_metric("best_test_loss", best_test_loss)
+    mlflow.log_metric("best_test_acc", best_test_acc)
+    mlflow.log_metric("best_test_epoch", best_test_epoch)
+
 
     writer.close()
     logging.info('Finished training')
