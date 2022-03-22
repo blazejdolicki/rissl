@@ -21,26 +21,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = parse_args(parser)
 
-    # if start_lr and end_lr not provided, set them based on max_lr with multipliers
-    # which empirically worked relatively well
-    if args.start_lr is None:
-        args.start_lr = args.max_lr / 10.0
-    if args.end_lr is None:
-        args.end_lr = args.max_lr / 100.0
-
-    # 4 possible cases for lr_warmup and lr_pct_start
-    # Case 1: both unspecified - use default lr_pct_start
-    # Case 2: lr_warmup specified, lr_pct_start unspecified - use lr_pct_start = lr_warmup/num_epochs
-    # Case 3: lr_warmup unspecified, lr_pct_start specified - use lr_pct_start
-    # Case 4: both specified - override lr_pct_start and set lr_pct_start = lr_warmup/num_epochs
-    if args.lr_warmup is not None:
-        if args.lr_pct_start is not None:
-            logging.warning(f"Both arguments `lr_warmup` and `pct_start` specified. Setting `pct_start` as pct_start = lr_warmup/num_epochs.")
-        args.lr_pct_start = args.lr_warmup / args.num_epochs
-    elif args.lr_pct_start is None:
-        args.lr_pct_start = 0.3
-
-
     job_id = args.log_dir.split("/")[-1]
     mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
     mlflow.set_experiment(args.exp_name)

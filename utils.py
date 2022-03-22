@@ -35,8 +35,15 @@ def fix_seed(seed):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
-
 def parse_args(parser):
+    args = read_args(parser)
+    args = modify_args(args)
+    return args
+
+def read_args(parser):
+    """
+    Read all arguments specified the terminal.
+    """
     parser.add_argument('--dataset', type=str, help='Dataset used for training and evaluation')
     parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data/breakhis',
                         help='Directory of the data')
@@ -61,7 +68,10 @@ def parse_args(parser):
     parser.add_argument('--num_epochs', type=int, default=2, help='Number of training epochs')
 
     parser.add_argument('--seed', type=int, default=7, help='Random seed')
-    parser.add_argument('--early_stopping', action="store_false", help="Use early stopping")
+    parser.add_argument('--no_validation', action="store_false",
+                        help="If this argument is specified, don't evaluate on validation set")
+    parser.add_argument('--no_early_stopping', action="store_false",
+                        help="If this argument is specified, don't use early stopping")
     parser.add_argument('--patience', type=int, default=20, help="Number of epochs without improvement required for early stopping")
     parser.add_argument("--log_dir", type=str, default="logs",
                         help="Directory with logs: checkpoints, parameters, metrics")
@@ -70,4 +80,35 @@ def parse_args(parser):
     parser.add_argument('--profile', action="store_true",
                         help="Use profiling to track CPU and GPU performance and memory")
     args = parser.parse_args()
+    return args
+
+
+def modify_args(args):
+    """
+    Sometimes when an argument is not specified, it is convenient to set it based on another argument.
+    This function includes all such cases.
+    """
+    # if start_lr and end_lr not provided, set them based on max_lr with multipliers
+    # which empirically worked relatively well
+    if args.start_lr is None:
+        args.start_lr = args.max_lr / 10.0
+    if args.end_lr is None:
+        args.end_lr = args.max_lr / 100.0
+
+    # 4 possible cases for lr_warmup and lr_pct_start
+    # Case 1: both unspecified - use default lr_pct_start
+    # Case 2: lr_warmup specified, lr_pct_start unspecified - use lr_pct_start = lr_warmup/num_epochs
+    # Case 3: lr_warmup unspecified, lr_pct_start specified - use lr_pct_start
+    # Case 4: both specified - override lr_pct_start and set lr_pct_start = lr_warmup/num_epochs
+    if args.lr_warmup is not None:
+        if args.lr_pct_start is not None:
+            logging.warning(
+                f"Both arguments `lr_warmup` and `pct_start` specified. "
+                f"Setting `pct_start` as pct_start = lr_warmup/num_epochs.")
+        args.lr_pct_start = args.lr_warmup / args.num_epochs
+    elif args.lr_pct_start is None:
+        args.lr_pct_start = 0.3
+
+    args.early_stopping = not args.no_early_stopping
+    del args.no_early_stopping
     return args
