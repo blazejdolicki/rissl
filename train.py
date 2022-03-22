@@ -87,6 +87,11 @@ if __name__ == "__main__":
     os.makedirs(tb_path)
     writer = SummaryWriter(log_dir=tb_path)
 
+    checkpoint_path = os.path.join(args.log_dir, "checkpoints")
+    os.makedirs(checkpoint_path)
+    best_model_path = os.path.join(checkpoint_path, "best_model.pt")
+    final_model_path = os.path.join(checkpoint_path, "final_model.pt")
+
     if args.early_stopping:
         best_test_loss = 1000.0
         best_test_acc = 0.0
@@ -138,50 +143,61 @@ if __name__ == "__main__":
         writer.add_scalar("train/epoch_acc", train_epoch_acc, epoch_idx)
         writer.add_scalar("learning_rate/lr_per_epoch", optimizer.param_groups[0]["lr"], epoch_idx)
 
-        test_epoch_loss = 0.0
-        test_correct = 0.0
-        test_total = 0.0
-        # since we're not training, we don't need to calculate the gradients for our outputs
-        with torch.no_grad():
-            for batch in test_loader:
-                model.eval()
+        # evaluate the model on validation set
+        if not args.no_validation:
+            test_epoch_loss = 0.0
+            test_correct = 0.0
+            test_total = 0.0
+            # since we're not training, we don't need to calculate the gradients for our outputs
+            with torch.no_grad():
+                for batch in test_loader:
+                    model.eval()
 
-                inputs, labels = batch
-                batch_size = inputs.shape[0]
+                    inputs, labels = batch
+                    batch_size = inputs.shape[0]
 
-                inputs = inputs.to(device)
-                labels = labels.to(device).float()
+                    inputs = inputs.to(device)
+                    labels = labels.to(device).float()
 
-                # calculate outputs by running images through the network
-                outputs = model(inputs).squeeze()
-                batch_loss = criterion(outputs, labels)
+                    # calculate outputs by running images through the network
+                    outputs = model(inputs).squeeze()
+                    batch_loss = criterion(outputs, labels)
 
-                test_epoch_loss += batch_size * batch_loss.item()
-                test_total += batch_size
-                test_correct += ((outputs > 0.0) == labels).sum().item()
+                    test_epoch_loss += batch_size * batch_loss.item()
+                    test_total += batch_size
+                    test_correct += ((outputs > 0.0) == labels).sum().item()
 
-        test_epoch_loss = test_epoch_loss / test_total
-        test_epoch_acc = 100 * test_correct / test_total
+            test_epoch_loss = test_epoch_loss / test_total
+            test_epoch_acc = 100 * test_correct / test_total
 
-        writer.add_scalar("test/epoch_loss", test_epoch_loss, epoch_idx)
-        writer.add_scalar("test/epoch_acc", test_epoch_acc, epoch_idx)
-        logging.info(f"Train loss: \t{train_epoch_loss}, train acc: \t{train_epoch_acc}")
-        logging.info(f"Test loss: \t{test_epoch_loss}, test acc: \t{test_epoch_acc}")
+            writer.add_scalar("test/epoch_loss", test_epoch_loss, epoch_idx)
+            writer.add_scalar("test/epoch_acc", test_epoch_acc, epoch_idx)
+            logging.info(f"Train loss: \t{train_epoch_loss}, train acc: \t{train_epoch_acc}")
+            logging.info(f"Test loss: \t{test_epoch_loss}, test acc: \t{test_epoch_acc}")
 
-        # set new best loss, acc and epoch
-        if test_epoch_acc > best_test_acc:
-            best_test_loss = test_epoch_loss
-            best_test_acc = test_epoch_acc
-            best_test_epoch = epoch_idx
-        # if using early stopping, end when loss didn't improve for n epochs
-        elif args.early_stopping and epoch_idx - best_test_epoch >= args.patience:
-            logging.info(f"Early stopping at epoch {epoch_idx} - test loss haven't improved for {args.patience} epochs")
-            break
+            # set new best loss, acc and epoch and save model
+            if test_epoch_acc > best_test_acc:
+                best_test_loss = test_epoch_loss
+                best_test_acc = test_epoch_acc
+                best_test_epoch = epoch_idx
 
-    mlflow.log_metric("best_test_loss", best_test_loss)
-    mlflow.log_metric("best_test_acc", best_test_acc)
-    mlflow.log_metric("best_test_epoch", best_test_epoch)
+                # save parameters of the best model for inference
+                logging.info(f"Saving the best model to {best_model_path}")
+                torch.save(model.state_dict(), best_model_path)
 
+            # if using early stopping, end when loss didn't improve for n epochs
+            elif args.early_stopping and epoch_idx - best_test_epoch >= args.patience:
+                logging.info(f"Early stopping at epoch {epoch_idx} - test loss haven't improved for {args.patience} epochs")
+                break
+
+    if not args.no_validation:
+        mlflow.log_metric("best_test_loss", best_test_loss)
+        mlflow.log_metric("best_test_acc", best_test_acc)
+        mlflow.log_metric("best_test_epoch", best_test_epoch)
+
+    # save parameters of the model after the last epoch for inference
+    logging.info(f"Saving the final model to {final_model_path}")
+    torch.save(model.state_dict(), final_model_path)
 
     writer.close()
     logging.info('Finished training')
