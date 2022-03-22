@@ -38,6 +38,7 @@ def fix_seed(seed):
 def parse_args(parser):
     args = read_args(parser)
     args = modify_args(args)
+    check_args(args)
     return args
 
 def read_args(parser):
@@ -68,9 +69,9 @@ def read_args(parser):
     parser.add_argument('--num_epochs', type=int, default=2, help='Number of training epochs')
 
     parser.add_argument('--seed', type=int, default=7, help='Random seed')
-    parser.add_argument('--no_validation', action="store_false",
+    parser.add_argument('--no_validation', action="store_true",
                         help="If this argument is specified, don't evaluate on validation set")
-    parser.add_argument('--no_early_stopping', action="store_false",
+    parser.add_argument('--no_early_stopping', action="store_true",
                         help="If this argument is specified, don't use early stopping")
     parser.add_argument('--patience', type=int, default=20, help="Number of epochs without improvement required for early stopping")
     parser.add_argument("--log_dir", type=str, default="logs",
@@ -112,3 +113,13 @@ def modify_args(args):
     args.early_stopping = not args.no_early_stopping
     del args.no_early_stopping
     return args
+
+
+def check_args(args):
+    assert not (args.early_stopping and args.no_validation), \
+        "Both args.early_stopping and args.no_validation are set to True. \n" \
+        "You cannot perform early stopping without evaluating the validation set. \n" \
+        "Either add --no_early_stopping flag or remove --no_validation flag."
+
+    assert args.dataset == "breakhis_fold" and (args.train_mag is not None and args.test_mag is not None)
+
