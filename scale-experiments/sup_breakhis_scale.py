@@ -9,9 +9,9 @@ parser.add_argument('--exp_name', type=str, default="hp_tuning",
                     help='MLFlow experiment folder where the results will be logged')
 args = parser.parse_args()
 
-# TODO: Fill in when the hyperparameter tuning results are available
-max_lr = 0.1
-model_type = "resnet18"
+# best found hyperparameters
+max_lr = 0.001
+model_type = "resnext101_32x8d"
 num_epochs = 50
 
 mags = [40, 100, 200, 400]
