@@ -188,8 +188,8 @@ if __name__ == "__main__":
         logging.info(f"Train loss: \t{train_epoch_loss}, train acc: \t{train_epoch_acc}")
         logging.info(f"Test loss: \t{test_epoch_loss}, test acc: \t{test_epoch_acc}")
 
-        # set new best loss and epoch
-        if test_epoch_loss < best_test_loss:
+        # set new best loss, acc and epoch
+        if test_epoch_acc > best_test_acc:
             best_test_loss = test_epoch_loss
             best_test_acc = test_epoch_acc
             best_test_epoch = epoch_idx
