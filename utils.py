@@ -80,6 +80,7 @@ def read_args(parser):
                         help="Directory with logs: checkpoints, parameters, metrics")
     parser.add_argument("--mlflow_dir", type=str, default="/project/bdolicki/mlflow_runs",
                         help="Directory with MLFlow logs")
+    parser.add_argument('--job_id', type=str, help="SLURM job id")
     parser.add_argument('--profile', action="store_true",
                         help="Use profiling to track CPU and GPU performance and memory")
     args = parser.parse_args()

@@ -4,7 +4,7 @@
 #SBATCH --partition=gpu_titanrtx_shared
 #SBATCH --job-name=scale_exp_sup
 #SBATCH --gpus-per-node=titanrtx:1
-#SBATCH --time=1-00:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 
 # GPU node r29n5 seems to be weirdly slow
@@ -19,7 +19,7 @@ source activate e2cnn
 cd $HOME/thesis/ssl-histo/
 mkdir -p $CHECKPOINT_DIR
 
-python scale-experiments/sup_breakhis_scale.py --log_dir $CHECKPOINT_DIR --exp_name scale_exp_sup
+python scale-experiments/sup_breakhis_scale.py --log_dir $CHECKPOINT_DIR --exp_name scale_exp_sup --job_id $SLURM_JOB_ID
 
 echo "finished"
 
