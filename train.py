@@ -3,7 +3,6 @@ import argparse
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-import torchvision.models as models
 import logging
 from torchvision import transforms
 import torch.optim as optim
@@ -11,11 +10,12 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 from tqdm import tqdm
 import mlflow
-import random
+import json
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from utils import setup_logging, parse_args, fix_seed
+from models import models
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -28,29 +28,19 @@ if __name__ == "__main__":
     mlflow.log_params(vars(args))
     setup_logging(args.log_dir)
 
+    # save args to json
+    args_path = os.path.join(args.log_dir, "args.json")
+    with open(args_path, 'w') as file:
+        json.dump(vars(args), file, indent=4)
+
     # fix seed
     fix_seed(args.seed)
-
-    # binary classification
-    archs = {"resnet18": models.resnet18,
-             "resnet34": models.resnet34,
-             "resnet50": models.resnet50,
-             "resnet101": models.resnet101,
-             "resnet152": models.resnet152,
-             "resnext50_32x4d": models.resnext50_32x4d,
-             "resnext101_32x8d": models.resnext101_32x8d,
-             "wide_resnet50_2": models.wide_resnet50_2,
-             "wide_resnet101_2": models.wide_resnet101_2,
-             }
-
-    assert args.model_type in archs, \
-        f"Model {args.model_type} is not supported. Choose one of the following models: {list(archs.keys())}"
 
     # same transforms as for supervised equivariant networks
     transform = transforms.Compose([transforms.Resize(256),
                                     transforms.CenterCrop(224),
                                     transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                    transforms.Normalize(mean=[0.485, 0.456, 0.406], # statistics from ImageNet
                                                          std=[0.229, 0.224, 0.225]),
                                     ])
 
@@ -70,7 +60,7 @@ if __name__ == "__main__":
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
     model_args = {"num_classes": 1} # BCE loss
-    model = archs[args.model_type](**model_args).to(device)
+    model = models[args.model_type](**model_args).to(device)
 
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum)
@@ -92,10 +82,15 @@ if __name__ == "__main__":
     best_model_path = os.path.join(checkpoint_path, "best_model.pt")
     final_model_path = os.path.join(checkpoint_path, "final_model.pt")
 
-    if args.early_stopping:
+    train_losses = []
+    train_accs = []
+
+    if not args.no_validation:
         best_test_loss = 1000.0
         best_test_acc = 0.0
         best_test_epoch = 0
+        test_losses = []
+        test_accs = []
 
     for epoch_idx in tqdm(range(args.num_epochs)):  # loop over the dataset multiple times
         logging.info(f"Epoch {epoch_idx}")
@@ -143,6 +138,9 @@ if __name__ == "__main__":
         writer.add_scalar("train/epoch_acc", train_epoch_acc, epoch_idx)
         writer.add_scalar("learning_rate/lr_per_epoch", optimizer.param_groups[0]["lr"], epoch_idx)
 
+        train_losses.append(train_epoch_loss)
+        train_accs.append(train_epoch_acc)
+
         # evaluate the model on validation set
         if not args.no_validation:
             test_epoch_loss = 0.0
@@ -172,6 +170,10 @@ if __name__ == "__main__":
 
             writer.add_scalar("test/epoch_loss", test_epoch_loss, epoch_idx)
             writer.add_scalar("test/epoch_acc", test_epoch_acc, epoch_idx)
+
+            test_losses.append(test_epoch_loss)
+            test_accs.append(test_epoch_acc)
+
             logging.info(f"Train loss: \t{train_epoch_loss}, train acc: \t{train_epoch_acc}")
             logging.info(f"Test loss: \t{test_epoch_loss}, test acc: \t{test_epoch_acc}")
 
@@ -194,6 +196,32 @@ if __name__ == "__main__":
         mlflow.log_metric("best_test_loss", best_test_loss)
         mlflow.log_metric("best_test_acc", best_test_acc)
         mlflow.log_metric("best_test_epoch", best_test_epoch)
+
+        mlflow.log_metric("final_test_loss", test_epoch_loss)
+        mlflow.log_metric("final_test_acc", test_epoch_acc)
+
+    # save metrics summary
+    metrics_summary_path = os.path.join(args.log_dir, "metrics_summary.json")
+    metrics_summmary = {"best_test_loss": best_test_loss,
+                        "best_test_acc": best_test_acc,
+                        "best_test_epoch": best_test_epoch,
+                        "final_test_loss": test_epoch_loss,
+                        "final_test_acc": test_epoch_acc
+                        }
+
+    with open(metrics_summary_path, 'w') as file:
+        json.dump(metrics_summmary, file, indent=4)
+
+    # save metrics over epochs to json
+    metrics_path = os.path.join(args.log_dir, "metrics_over_epochs.json")
+    metrics = {"train": {"losses": train_losses,
+                         "accs": train_accs},
+               "test": {"losses": test_losses,
+                        "accs": test_accs}
+               }
+
+    with open(metrics_path, 'w') as file:
+        json.dump(metrics, file, indent=4)
 
     # save parameters of the model after the last epoch for inference
     logging.info(f"Saving the final model to {final_model_path}")

@@ -5,6 +5,8 @@ import torch
 import numpy as np
 import random
 
+from models import models
+
 def setup_logging(output_dir):
     """
     Setup various logging streams: stdout and file handlers.
@@ -122,4 +124,6 @@ def check_args(args):
         "Either add --no_early_stopping flag or remove --no_validation flag."
 
     assert args.dataset == "breakhis_fold" and (args.train_mag is not None and args.test_mag is not None)
+    assert args.model_type in models, \
+        f"Model {args.model_type} is not supported. Choose one of the following models: {list(models.keys())}"
 
