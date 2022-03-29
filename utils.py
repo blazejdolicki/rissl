@@ -124,7 +124,7 @@ def check_args(args):
         "You cannot perform early stopping without evaluating the validation set. \n" \
         "Either add --no_early_stopping flag or remove --no_validation flag."
 
-    assert args.dataset == "breakhis_fold" and (args.train_mag is not None and args.test_mag is not None)
+    assert args.dataset != "breakhis_fold" or (args.train_mag is not None and args.test_mag is not None)
     assert args.model_type in models, \
         f"Model {args.model_type} is not supported. Choose one of the following models: {list(models.keys())}"
 
