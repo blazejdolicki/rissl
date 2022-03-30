@@ -111,7 +111,7 @@ if __name__ == "__main__":
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = model(inputs).squeeze()
+            outputs = model(inputs).squeeze() # use squeeze to make the shape compatible with the loss
             batch_loss = criterion(outputs, labels)
 
             batch_loss.backward()

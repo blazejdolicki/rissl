@@ -100,7 +100,7 @@ def evaluate(args):
             labels = labels.to(device).float()
 
             # calculate outputs by running images through the network
-            outputs = model(inputs).squeeze()
+            outputs = model(inputs).squeeze() # use squeeze to make the shape compatible with the loss
             batch_loss = criterion(outputs, labels)
 
             epoch_loss += batch_size * batch_loss.item()
