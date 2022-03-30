@@ -88,7 +88,7 @@ def evaluate(args):
 
     epoch_loss = 0.0
     correct = 0.0
-    test_total = 0.0
+    actual_data_size = 0.0
     with torch.no_grad():
         for batch in dataloader:
             model.eval()
@@ -104,11 +104,11 @@ def evaluate(args):
             batch_loss = criterion(outputs, labels)
 
             epoch_loss += batch_size * batch_loss.item()
-            test_total += batch_size
+            actual_data_size += batch_size
             correct += ((outputs > 0.0) == labels).sum().item()
 
-    epoch_loss = epoch_loss / test_total
-    epoch_acc = 100 * correct / test_total
+    epoch_loss = epoch_loss / actual_data_size
+    epoch_acc = 100 * correct / actual_data_size
 
     logging.info(f"Test loss: \t{epoch_loss}, test acc: \t{epoch_acc}")
 

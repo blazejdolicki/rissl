@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
         train_epoch_loss = 0.0
         correct = 0.0
-        total = 0
+        actual_train_size = 0
         for batch_idx, batch in enumerate(train_loader):
             inputs, labels = batch
             batch_size = inputs.shape[0]
@@ -124,7 +124,7 @@ if __name__ == "__main__":
             scheduler.step()
 
             train_epoch_loss += batch_size * batch_loss.item()
-            total += batch_size
+            actual_train_size += batch_size
             # Note: for label equal to 1, we want outputs of the sigmoid to be above 0.5
             # which is equivalent to outputs before the sigmoid that are above 0
             # and since we are using BCEWithLogits loss, the outputs are not passed through sigmoid
@@ -133,8 +133,8 @@ if __name__ == "__main__":
         # based on https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html#test-the-network-on-the-test-data
         # explicitly calculating total instead of using len(train_dataset) is more robust
         # because if we drop the last batch, those two are not equal
-        train_epoch_loss = train_epoch_loss / total
-        train_epoch_acc = 100 * correct / total
+        train_epoch_loss = train_epoch_loss / actual_train_size
+        train_epoch_acc = 100 * correct / actual_train_size
 
         writer.add_scalar("train/epoch_loss", train_epoch_loss, epoch_idx)
         writer.add_scalar("train/epoch_acc", train_epoch_acc, epoch_idx)
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         if not args.no_validation:
             test_epoch_loss = 0.0
             test_correct = 0.0
-            test_total = 0.0
+            actual_test_size = 0.0
             # since we're not training, we don't need to calculate the gradients for our outputs
             with torch.no_grad():
                 for batch in test_loader:
@@ -164,11 +164,11 @@ if __name__ == "__main__":
                     batch_loss = criterion(outputs, labels)
 
                     test_epoch_loss += batch_size * batch_loss.item()
-                    test_total += batch_size
+                    actual_test_size += batch_size
                     test_correct += ((outputs > 0.0) == labels).sum().item()
 
-            test_epoch_loss = test_epoch_loss / test_total
-            test_epoch_acc = 100 * test_correct / test_total
+            test_epoch_loss = test_epoch_loss / actual_test_size
+            test_epoch_acc = 100 * test_correct / actual_test_size
 
             writer.add_scalar("test/epoch_loss", test_epoch_loss, epoch_idx)
             writer.add_scalar("test/epoch_acc", test_epoch_acc, epoch_idx)
