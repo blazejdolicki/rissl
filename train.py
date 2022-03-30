@@ -88,7 +88,7 @@ if __name__ == "__main__":
     train_accs = []
 
     if not args.no_validation:
-        best_test_loss = 1000.0
+        best_test_loss = np.inf
         best_test_acc = 0.0
         best_test_epoch = 0
         test_losses = []
