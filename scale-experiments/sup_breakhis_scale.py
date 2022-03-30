@@ -49,8 +49,7 @@ if __name__ == "__main__":
                             "--train_mag", str(train_mag),
                             "--test_mag", str(train_mag) # evaluate on the same magnitude
                             ])
-            # TODO: should it be best model or final model?
-            model_name = "best_model.pt" if args.best_or_last == "best" else "final_model.pt"
+            model_name = f"{args.best_or_last}_model.pt"
             model_path = os.path.join(train_log_dir, "checkpoints", model_name)
             for test_mag_idx, test_mag in enumerate(mags):
                 test_log_dir = os.path.join(train_log_dir, f"test_mag_{test_mag}")
