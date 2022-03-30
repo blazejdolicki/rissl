@@ -57,6 +57,8 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+    logging.info(f"Device: {device}")
+    mlflow.log_param("device", device)
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
     model_args = {"num_classes": 1} # BCE loss
