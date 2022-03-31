@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#SBATCH -N 1 # number of nodes
+#SBATCH --partition=gpu_titanrtx
+#SBATCH --job-name=test_multi_gpu
+#SBATCH --gpus-per-node=titanrtx:4
+#SBATCH --time=02:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+
+
+LOGS_DIR=/project/bdolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
+RUN_NAME=${SLURM_JOB_NAME}_${SLURM_JOB_ID}
+
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+
+module load 2021
+module load Anaconda3/2021.05
+
+source activate e2cnn
+cd $HOME/thesis/Template
+
+python train.py -gpus 0,1,2,3
+
+echo "finished"
+
