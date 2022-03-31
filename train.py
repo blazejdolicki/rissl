@@ -140,6 +140,12 @@ if __name__ == "__main__":
         writer.add_scalar("train/epoch_acc", train_epoch_acc, epoch_idx)
         writer.add_scalar("learning_rate/lr_per_epoch", optimizer.param_groups[0]["lr"], epoch_idx)
 
+            if epoch_idx % args.save_model_every_n_epochs == 0:
+                # save model every n epochs
+                epoch_model_path = os.path.join(checkpoint_path, f"model_epoch_{epoch_idx}.pt")
+                logging.info(f"Saving the model at epoch {epoch_idx} to {epoch_model_path} ")
+                torch.save(model.state_dict(), epoch_model_path)
+
         train_losses.append(train_epoch_loss)
         train_accs.append(train_epoch_acc)
 

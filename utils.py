@@ -80,6 +80,8 @@ def read_args(parser):
                         help="Directory with logs: checkpoints, parameters, metrics")
     parser.add_argument("--mlflow_dir", type=str, default="/project/bdolicki/mlflow_runs",
                         help="Directory with MLFlow logs")
+    parser.add_argument("--save_model_every_n_epochs", type=int, default=1,
+                        help="Defines how often the model is saved")
     parser.add_argument('--job_id', type=str, help="SLURM job id")
     parser.add_argument('--profile', action="store_true",
                         help="Use profiling to track CPU and GPU performance and memory")
