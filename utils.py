@@ -48,7 +48,7 @@ def read_args(parser):
     Read all arguments specified the terminal.
     """
     parser.add_argument('--dataset', type=str, help='Dataset used for training and evaluation')
-    parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data/breakhis',
+    parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data',
                         help='Directory of the data')
     parser.add_argument('--exp_name', type=str, default="Default",
                         help='MLFlow experiment folder where the results will be logged')

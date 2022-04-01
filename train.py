@@ -46,11 +46,13 @@ if __name__ == "__main__":
                                     ])
 
     if args.dataset == "breakhis_fold":
-        train_dataset = BreakhisFoldDataset(args.data_dir, "train", args.fold, args.train_mag, transform)
+        breakhis_dir = os.path.join(args.data_dir, "breakhis")
+        train_dataset = BreakhisFoldDataset(breakhis_dir, "train", args.fold, args.train_mag, transform)
         test_dataset = BreakhisFoldDataset(args.data_dir, "test", args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
-        train_dataset = BreakhisDataset(args.data_dir, "train", transform)
-        test_dataset = BreakhisDataset(args.data_dir, "test", transform)
+        breakhis_dir = os.path.join(args.data_dir, "breakhis")
+        train_dataset = BreakhisDataset(breakhis_dir, "train", transform)
+        test_dataset = BreakhisDataset(breakhis_dir, "test", transform)
     elif args.dataset == "pcam":
         pcam_dir = os.path.join(args.data_dir, "pcam")
         train_dataset = PCamDataset(root_dir=pcam_dir, split="train", transform=transform)
