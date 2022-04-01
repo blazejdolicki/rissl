@@ -14,6 +14,7 @@ import json
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
+from datasets.pcam_dataset import PCamDataset
 from utils import setup_logging, parse_args, fix_seed
 from models import models
 
@@ -50,6 +51,10 @@ if __name__ == "__main__":
     elif args.dataset == "breakhis":
         train_dataset = BreakhisDataset(args.data_dir, "train", transform)
         test_dataset = BreakhisDataset(args.data_dir, "test", transform)
+    elif args.dataset == "pcam":
+        pcam_dir = os.path.join(args.data_dir, "pcam")
+        train_dataset = PCamDataset(root_dir=pcam_dir, split="train", transform=transform)
+        test_dataset = PCamDataset(root_dir=pcam_dir, split="valid", transform=transform)
 
     logging.info(f"Train size {len(train_dataset)}, test size {len(test_dataset)}")
 
