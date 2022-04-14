@@ -27,9 +27,11 @@ python data_scripts/create_nct_filelist.py
 ```
 ### BreaKHis
 Download [here](https://web.inf.ufpr.br/vri/databases/breast-cancer-histopathological-database-breakhis/) and unpack in `data/breakhis`.
-Also download the python script and once the data is downloaded and unpacked, run:
+
+In order to use cross validation with 5 folds from the original paper, download the python script and once the data is downloaded and unpacked, run:
 ```
 python mkfold.py
 ```
+Afterwards, create a directory `data/breakhis_fold` and move folders `fold1`, `fold2` etc. there.
 ### Bach
 Download [here](https://zenodo.org/record/3632035#.YbdBDr3MJPa) and unpack in `data/bach`.
