@@ -33,7 +33,9 @@ class PCamDataset(Dataset):
 
     def __getitem__(self, idx):
         img = self.imgs[idx]
-        label = torch.from_numpy(self.labels[idx]).flatten().float().item() # sometimes remove .item()
+        # label = torch.from_numpy(self.labels[idx]).flatten().float()
+        # print(f"type of self.labels[idx]: {type(self.labels[idx]), self.labels[idx].shape}")
+        label = self.labels[idx]
         # convert to PIL image as required by Resize (old Pytorch version)
         img = Image.fromarray(img)
 
