@@ -93,6 +93,12 @@ def read_args(parser):
     parser.add_argument('--job_id', type=str, help="SLURM job id")
     parser.add_argument('--profile', action="store_true",
                         help="Use profiling to track CPU and GPU performance and memory")
+    # Distributed training
+    parser.add_argument('--num_nodes', default=1, type=int,
+                        help="Number of nodes used for training")
+    parser.add_argument('--ip_address', type=str, help='ip address of the host node')
+    parser.add_argument('--ngpus_per_node', default=1, type=int,
+                        help='Number of gpus per node')
     args = parser.parse_args()
     return args
 
@@ -125,6 +131,8 @@ def modify_args(args):
 
     args.early_stopping = not args.no_early_stopping
     del args.no_early_stopping
+
+    args.multi_gpu = args.ngpus_per_node * args.num_nodes > 1
     return args
 
 
@@ -137,4 +145,4 @@ def check_args(args):
     assert args.dataset != "breakhis_fold" or (args.train_mag is not None and args.test_mag is not None)
     assert args.model_type in models, \
         f"Model {args.model_type} is not supported. Choose one of the following models: {list(models.keys())}"
-
+    assert not args.multi_gpu or args.ip_address
