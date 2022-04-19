@@ -50,6 +50,14 @@ def read_args(parser):
     parser.add_argument('--dataset', type=str, help='Dataset used for training and evaluation')
     parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data',
                         help='Directory of the data')
+    parser.add_argument('--old_img_path_prefix', type=str,
+                        help='Old path to images that will be replaced by the new prefix in the .npy files.'
+                             'It is specifically useful when the .npy files where generated for one directory'
+                             'and now they should be used in another.')
+    parser.add_argument('--new_img_path_prefix', type=str,
+                        help='New path to images that will be replaced by the new prefix.in the .npy files.'
+                             'It is specifically useful when the .npy files where generated for one directory'
+                             'and now they should be used in another.')
     parser.add_argument('--exp_name', type=str, default="Default",
                         help='MLFlow experiment folder where the results will be logged')
     parser.add_argument('--fold', type=int, default=1, choices=[1, 2, 3, 4, 5], help='Fold used for training and testing')
