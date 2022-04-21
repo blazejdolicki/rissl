@@ -99,6 +99,24 @@ def read_args(parser):
     parser.add_argument('--ip_address', type=str, help='ip address of the host node')
     parser.add_argument('--ngpus_per_node', default=1, type=int,
                         help='Number of gpus per node')
+    # Equivariant networks
+    def none_or_float(value):
+        if value == 'None':
+            return None
+        return float(value)
+
+    parser.add_argument('--N', type=int, help='Size of cyclic group for GCNN and maximum frequency for HNET')
+    parser.add_argument('--F', type=none_or_float, default=None,
+                        help='Frequency cut-off: maximum frequency at radius "r" is "F*r"')
+    parser.add_argument('--sigma', type=none_or_float, default=None,
+                        help='Width of the rings building the bases (std of the gaussian window)')
+    parser.add_argument('--restrict', type=int, default=-1, help='Layer where to restrict SFCNN from E(2) to SE(2)')
+    parser.add_argument('--fixparams', dest="fixparams", action="store_true",
+                        help='Keep the number of parameters of the model fixed by adjusting its topology')
+    parser.set_defaults(fixparams=False)
+    parser.add_argument('--deltaorth', dest="deltaorth", action="store_true",
+                        help='Use delta orthogonal initialization in conv layers')
+    parser.set_defaults(deltaorth=False)
     args = parser.parse_args()
     return args
 
