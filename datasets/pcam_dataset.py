@@ -23,8 +23,8 @@ class PCamDataset(Dataset):
         self.labels = h5py.File(labels_path, 'r')["y"]
 
         # subsambple - TODO remove after testing
-        self.imgs = self.imgs[:100000]
-        self.labels = self.labels[:100000]
+        self.imgs = self.imgs
+        self.labels = self.labels
 
         self.transform = transform
 
@@ -33,9 +33,7 @@ class PCamDataset(Dataset):
 
     def __getitem__(self, idx):
         img = self.imgs[idx]
-        # label = torch.from_numpy(self.labels[idx]).flatten().float()
-        # print(f"type of self.labels[idx]: {type(self.labels[idx]), self.labels[idx].shape}")
-        label = self.labels[idx]
+        label = self.labels[idx].item()
         # convert to PIL image as required by Resize (old Pytorch version)
         img = Image.fromarray(img)
 
