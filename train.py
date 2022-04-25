@@ -14,8 +14,10 @@ import json
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
+from datasets.pcam_dataset import PCamDataset
 from utils import setup_logging, parse_args, fix_seed
 from models import models
+import time
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -48,23 +50,28 @@ if __name__ == "__main__":
         train_dataset = BreakhisFoldDataset(args.data_dir, "train", args.fold, args.train_mag, transform)
         test_dataset = BreakhisFoldDataset(args.data_dir, "test", args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
-        train_dataset = BreakhisDataset(args.data_dir, "train", transform)
-        test_dataset = BreakhisDataset(args.data_dir, "test", transform)
+        train_dataset = BreakhisDataset(args.data_dir, "train", args.old_img_path_prefix, args.new_img_path_prefix, transform)
+        test_dataset = BreakhisDataset(args.data_dir, "test", args.old_img_path_prefix, args.new_img_path_prefix, transform)
+    elif args.dataset == "pcam":
+        train_dataset = PCamDataset(root_dir=args.data_dir, split="train", transform=transform)
+        test_dataset = PCamDataset(root_dir=args.data_dir, split="valid", transform=transform)
 
     logging.info(f"Train size {len(train_dataset)}, test size {len(test_dataset)}")
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
+                              drop_last=True)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers,
+                             drop_last=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
     logging.info(f"Device: {device}")
     mlflow.log_param("device", device)
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
-    model_args = {"num_classes": 1} # BCE loss
+    model_args = {"num_classes": 2} # BCE loss
     model = models[args.model_type](**model_args).to(device)
 
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum)
 
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
@@ -102,18 +109,31 @@ if __name__ == "__main__":
         train_epoch_loss = 0.0
         correct = 0.0
         actual_train_size = 0
+
+        if args.profile:
+            prof = torch.profiler.profile(
+                schedule=torch.profiler.schedule(wait=10, warmup=10, active=50, repeat=4),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(tb_path),
+                record_shapes=True,
+                with_stack=True)
+            prof.start()
+
+        start_load = time.time()
+
         for batch_idx, batch in enumerate(train_loader):
+            batch_load_ms = (time.time() - start_load) * 1000.0
+            writer.add_scalar("Speed/batch_load_ms", batch_load_ms, batch_idx)
             inputs, labels = batch
             batch_size = inputs.shape[0]
 
             inputs = inputs.to(device)
-            labels = labels.to(device).float()
+            labels = labels.to(device)
 
             # zero the parameter gradients
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = model(inputs).squeeze() # use squeeze to make the shape compatible with the loss
+            outputs = model(inputs) #.squeeze() # use squeeze to make the shape compatible with the loss
             batch_loss = criterion(outputs, labels)
 
             batch_loss.backward()
@@ -125,10 +145,16 @@ if __name__ == "__main__":
 
             train_epoch_loss += batch_size * batch_loss.item()
             actual_train_size += batch_size
-            # Note: for label equal to 1, we want outputs of the sigmoid to be above 0.5
-            # which is equivalent to outputs before the sigmoid that are above 0
-            # and since we are using BCEWithLogits loss, the outputs are not passed through sigmoid
-            correct += ((outputs > 0.0) == labels).sum().item()
+            preds = outputs.argmax(dim=1)
+            correct += (preds == labels).sum().item()
+
+            start_load = time.time()
+
+            if args.profile:
+                prof.step()
+
+        if args.profile:
+            prof.stop()
 
         # based on https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html#test-the-network-on-the-test-data
         # explicitly calculating total instead of using len(train_dataset) is more robust
@@ -140,11 +166,11 @@ if __name__ == "__main__":
         writer.add_scalar("train/epoch_acc", train_epoch_acc, epoch_idx)
         writer.add_scalar("learning_rate/lr_per_epoch", optimizer.param_groups[0]["lr"], epoch_idx)
 
-            if epoch_idx % args.save_model_every_n_epochs == 0:
-                # save model every n epochs
-                epoch_model_path = os.path.join(checkpoint_path, f"model_epoch_{epoch_idx}.pt")
-                logging.info(f"Saving the model at epoch {epoch_idx} to {epoch_model_path} ")
-                torch.save(model.state_dict(), epoch_model_path)
+        if epoch_idx % args.save_model_every_n_epochs == 0:
+            # save model every n epochs
+            epoch_model_path = os.path.join(checkpoint_path, f"model_epoch_{epoch_idx}.pt")
+            logging.info(f"Saving the model at epoch {epoch_idx} to {epoch_model_path} ")
+            torch.save(model.state_dict(), epoch_model_path)
 
         train_losses.append(train_epoch_loss)
         train_accs.append(train_epoch_acc)
@@ -163,15 +189,16 @@ if __name__ == "__main__":
                     batch_size = inputs.shape[0]
 
                     inputs = inputs.to(device)
-                    labels = labels.to(device).float()
+                    labels = labels.to(device)
 
                     # calculate outputs by running images through the network
-                    outputs = model(inputs).squeeze()
+                    outputs = model(inputs)
                     batch_loss = criterion(outputs, labels)
 
                     test_epoch_loss += batch_size * batch_loss.item()
                     actual_test_size += batch_size
-                    test_correct += ((outputs > 0.0) == labels).sum().item()
+                    preds = outputs.argmax(dim=1)
+                    test_correct += (preds == labels).sum().item()
 
             test_epoch_loss = test_epoch_loss / actual_test_size
             test_epoch_acc = 100 * test_correct / actual_test_size

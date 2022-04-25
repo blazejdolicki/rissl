@@ -48,8 +48,16 @@ def read_args(parser):
     Read all arguments specified the terminal.
     """
     parser.add_argument('--dataset', type=str, help='Dataset used for training and evaluation')
-    parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data/breakhis',
+    parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data',
                         help='Directory of the data')
+    parser.add_argument('--old_img_path_prefix', type=str,
+                        help='Old path to images that will be replaced by the new prefix in the .npy files.'
+                             'It is specifically useful when the .npy files where generated for one directory'
+                             'and now they should be used in another.')
+    parser.add_argument('--new_img_path_prefix', type=str,
+                        help='New path to images that will be replaced by the new prefix.in the .npy files.'
+                             'It is specifically useful when the .npy files where generated for one directory'
+                             'and now they should be used in another.')
     parser.add_argument('--exp_name', type=str, default="Default",
                         help='MLFlow experiment folder where the results will be logged')
     parser.add_argument('--fold', type=int, default=1, choices=[1, 2, 3, 4, 5], help='Fold used for training and testing')
@@ -85,6 +93,30 @@ def read_args(parser):
     parser.add_argument('--job_id', type=str, help="SLURM job id")
     parser.add_argument('--profile', action="store_true",
                         help="Use profiling to track CPU and GPU performance and memory")
+    # Distributed training
+    parser.add_argument('--num_nodes', default=1, type=int,
+                        help="Number of nodes used for training")
+    parser.add_argument('--ip_address', type=str, help='ip address of the host node')
+    parser.add_argument('--ngpus_per_node', default=1, type=int,
+                        help='Number of gpus per node')
+    # Equivariant networks
+    def none_or_float(value):
+        if value == 'None':
+            return None
+        return float(value)
+
+    parser.add_argument('--N', type=int, help='Size of cyclic group for GCNN and maximum frequency for HNET')
+    parser.add_argument('--F', type=none_or_float, default=None,
+                        help='Frequency cut-off: maximum frequency at radius "r" is "F*r"')
+    parser.add_argument('--sigma', type=none_or_float, default=None,
+                        help='Width of the rings building the bases (std of the gaussian window)')
+    parser.add_argument('--restrict', type=int, default=-1, help='Layer where to restrict SFCNN from E(2) to SE(2)')
+    parser.add_argument('--fixparams', dest="fixparams", action="store_true",
+                        help='Keep the number of parameters of the model fixed by adjusting its topology')
+    parser.set_defaults(fixparams=False)
+    parser.add_argument('--deltaorth', dest="deltaorth", action="store_true",
+                        help='Use delta orthogonal initialization in conv layers')
+    parser.set_defaults(deltaorth=False)
     args = parser.parse_args()
     return args
 
@@ -117,6 +149,8 @@ def modify_args(args):
 
     args.early_stopping = not args.no_early_stopping
     del args.no_early_stopping
+
+    args.multi_gpu = args.ngpus_per_node * args.num_nodes > 1
     return args
 
 
@@ -129,4 +163,4 @@ def check_args(args):
     assert args.dataset != "breakhis_fold" or (args.train_mag is not None and args.test_mag is not None)
     assert args.model_type in models, \
         f"Model {args.model_type} is not supported. Choose one of the following models: {list(models.keys())}"
-
+    assert not args.multi_gpu or args.ip_address

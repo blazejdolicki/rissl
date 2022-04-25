@@ -5,6 +5,7 @@ from PIL import Image
 from torchvision.io import read_image
 from PIL import Image
 import numpy as np
+import logging
 
 class BreakhisDataset(Dataset):
     """
@@ -17,11 +18,15 @@ class BreakhisDataset(Dataset):
     It is initialized from a .npy file (generated with create_breakhis_filelist.py) which contains a list of images
     in every split.
     """
-    def __init__(self, root_dir, split, transform=None):
+    def __init__(self, root_dir, split, old_img_path_prefix=None, new_img_path_prefix=None, transform=None):
         self.label2int = {"benign": 0, "malignant": 1}
         imgs_path = os.path.join(root_dir, f"{split}_images.npy")
         labels_path = os.path.join(root_dir, f"{split}_labels.npy")
-        self.imgs = np.load(imgs_path)
+        if old_img_path_prefix is not None or old_img_path_prefix != "None":
+            logging.info(f"Replace image path prefixes from {old_img_path_prefix} to {new_img_path_prefix}")
+            self.imgs = [img.replace(old_img_path_prefix, new_img_path_prefix) for img in np.load(imgs_path)]
+        else:
+            self.imgs = np.load(imgs_path)
         self.labels = [self.label2int[label] for label in np.load(labels_path)]
         self.transform = transform
 
@@ -31,7 +36,6 @@ class BreakhisDataset(Dataset):
     def __getitem__(self, idx):
         img = Image.open(self.imgs[idx])
         label = self.labels[idx]
-
         if self.transform is not None:
             img = self.transform(img)
 

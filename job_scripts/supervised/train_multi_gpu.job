@@ -1,14 +1,12 @@
 #!/bin/bash
 
 #SBATCH -N 1 # number of nodes
-#SBATCH --partition=gpu_titanrtx_shared
-#SBATCH --job-name=breakhis
-#SBATCH --gpus-per-node=titanrtx:1
-#SBATCH --time=5:00:00
+#SBATCH --partition=gpu_titanrtx
+#SBATCH --job-name=breakhis_multigpu
+#SBATCH --gpus-per-node=titanrtx:4
+#SBATCH --time=01:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
-#SBATCH --nodelist=r29n2
 
-# GPU node r29n5 seems to be weirdly slow
 
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
@@ -20,7 +18,10 @@ source activate e2cnn
 cd $HOME/thesis/ssl-histo/
 mkdir -p $CHECKPOINT_DIR
 
-python train.py --dataset breakhis --log_dir $CHECKPOINT_DIR --num_epochs 100
+
+# Store the master node’s IP address in the MASTER_ADDR environment variable.
+
+python train.py --ip_address $(hostname -I) --ngpus_per_node 4 --dataset breakhis --log_dir $CHECKPOINT_DIR --num_epochs 1
 
 echo "finished"
 

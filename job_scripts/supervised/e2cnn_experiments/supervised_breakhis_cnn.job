@@ -2,7 +2,7 @@
 
 #SBATCH -N 1 # number of nodes
 #SBATCH --partition=gpu_titanrtx_shared
-#SBATCH --job-name=sup_pcam_cnn
+#SBATCH --job-name=sup_breakhis_cnn
 #SBATCH --gpus-per-node=titanrtx:1
 #SBATCH --time=02:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
@@ -11,14 +11,13 @@
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
-
 module load 2021
 module load Anaconda3/2021.05
 
 source activate e2cnn
 cd $HOME/thesis/e2cnn_experiments/experiments
 
-python multiple_exps.py --batch_size=128 --workers=1 --dataset=pcam --model=CNN --type=None --N=1 --restrict=0 \
+python multiple_exps.py --batch_size=16 --workers=8 --dataset=breakhis --model=CNN --type=None --N=1 --restrict=0 \
        --F=None --sigma=None --interpolation=2 --epochs=1 --lr=0.001  --augment --verbose=4 \
        --adapt_lr=exponential --lr_decay_start=10 --reshuffle --weight_decay=0.0 --optimizer=sfcnn \
        --lamb_fully_L2=0.0000001 --lamb_conv_L2=0.0000001 --lamb_bn_L2=0 --lamb_softmax_L2=0 \
