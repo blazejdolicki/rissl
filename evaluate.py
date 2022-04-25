@@ -14,7 +14,7 @@ import copy
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
-from utils import setup_logging, parse_args, fix_seed
+from datasets.pcam_dataset import PCamDataset
 from utils import setup_logging, parse_args, fix_seed, convert_model_to_single_gpu
 from models import models
 
@@ -77,14 +77,19 @@ def evaluate(args):
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
         dataset = BreakhisDataset(args.data_dir, args.split, transform)
+    elif args.dataset == "pcam":
+        dataset = PCamDataset(root_dir=args.data_dir, split=args.split, transform=transform)
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
-    model_args = {"num_classes": 1}  # BCE loss
+    model_args = {"num_classes": 2}  # CE loss
+    densenet = {"growth_rate": args.growth_rate, "block_config": (3, 3, 3), "num_init_features": args.num_init_features}
+    model_args = {**model_args, **densenet}
     model = models[train_args.model_type](**model_args).to(device)
+
     # load model from checkpoint
     start_time = time.time()
 
@@ -97,7 +102,7 @@ def evaluate(args):
     end_time = time.time()
     logging.debug(f"Loading the model took {end_time - start_time} seconds")
 
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
 
     epoch_loss = 0.0
     correct = 0.0
@@ -110,15 +115,16 @@ def evaluate(args):
             batch_size = inputs.shape[0]
 
             inputs = inputs.to(device)
-            labels = labels.to(device).float()
+            labels = labels.to(device)
 
             # calculate outputs by running images through the network
-            outputs = model(inputs).squeeze() # use squeeze to make the shape compatible with the loss
+            outputs = model(inputs)
             batch_loss = criterion(outputs, labels)
 
             epoch_loss += batch_size * batch_loss.item()
             actual_data_size += batch_size
-            correct += ((outputs > 0.0) == labels).sum().item()
+            preds = outputs.argmax(dim=1)
+            correct += (preds == labels).sum().item()
 
     epoch_loss = epoch_loss / actual_data_size
     epoch_acc = 100 * correct / actual_data_size
@@ -137,7 +143,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, help='Dataset used for evaluation')
     parser.add_argument('--data_dir', type=str, help='Directory of the data')
-    parser.add_argument('--split', type=str, required=True, choices=["train", "test"])
+    parser.add_argument('--split', type=str, required=True, choices=["train", "test", "valid"])
     parser.add_argument('--checkpoint_path', type=str, required=True,
                         help="Path to a trained model used for evaluation")
     parser.add_argument('--exp_name', type=str,
