@@ -10,10 +10,12 @@ from tqdm import tqdm
 import mlflow
 import json
 import time
+import copy
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from utils import setup_logging, parse_args, fix_seed
+from utils import setup_logging, parse_args, fix_seed, convert_model_to_single_gpu
 from models import models
 
 """
@@ -53,18 +55,23 @@ def evaluate(args):
     mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
     mlflow.set_experiment(args.exp_name)
     mlflow.start_run(run_name=job_id)
-    mlflow.log_params(vars(args))
-    # setup_logging(args.log_dir)
+    mlflow_args = copy.deepcopy(args)
+    mlflow_args.transform = "See args.json"
+    mlflow.log_params(vars(mlflow_args))
+    setup_logging(args.log_dir)
 
     fix_seed(args.seed)
 
     # same transforms as for supervised equivariant networks
-    transform = transforms.Compose([transforms.Resize(256),
-                                    transforms.CenterCrop(224),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                         std=[0.229, 0.224, 0.225]),
-                                    ])
+    transform = transforms.Compose([transforms.ToTensor()])
+
+    transform_list_str = [str(t) for t in transform.transforms]
+    assert transform_list_str == args.transform["test"], \
+        "Current image transformations are different than those used for evaluation during training"
+
+    args_path = os.path.join(args.log_dir, "args.json")
+    with open(args_path, 'w') as file:
+        json.dump(vars(args), file, indent=4)
 
     if args.dataset == "breakhis_fold":
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
@@ -80,7 +87,13 @@ def evaluate(args):
     model = models[train_args.model_type](**model_args).to(device)
     # load model from checkpoint
     start_time = time.time()
-    model.load_state_dict(torch.load(args.checkpoint_path))
+
+    state_dict = torch.load(args.checkpoint_path)
+
+    if args.multi_gpu:
+        state_dict = convert_model_to_single_gpu(state_dict)
+
+    model.load_state_dict(state_dict)
     end_time = time.time()
     logging.debug(f"Loading the model took {end_time - start_time} seconds")
 
