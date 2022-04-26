@@ -10,12 +10,11 @@ from tqdm import tqdm
 import mlflow
 import json
 import time
-import copy
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.pcam_dataset import PCamDataset
-from utils import setup_logging, parse_args, fix_seed, convert_model_to_single_gpu
+import utils
 from models import models
 
 """
@@ -51,16 +50,9 @@ def evaluate(args):
         if not hasattr(args, arg) or getattr(args, arg) is None: # if arg doesn't exist or is None
             setattr(args, arg, getattr(train_args, arg))
 
-    job_id = args.log_dir.split("/")[-1]
-    mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
-    mlflow.set_experiment(args.exp_name)
-    mlflow.start_run(run_name=job_id)
-    mlflow_args = copy.deepcopy(args)
-    mlflow_args.transform = "See args.json"
-    mlflow.log_params(vars(mlflow_args))
-    setup_logging(args.log_dir)
+    utils.setup_logging(args.log_dir)
 
-    fix_seed(args.seed)
+    utils.fix_seed(args.seed)
 
     # same transforms as for supervised equivariant networks
     transform = transforms.Compose([transforms.ToTensor()])
@@ -68,6 +60,8 @@ def evaluate(args):
     transform_list_str = [str(t) for t in transform.transforms]
     assert transform_list_str == args.transform["test"], \
         "Current image transformations are different than those used for evaluation during training"
+
+    utils.setup_mlflow(args)
 
     args_path = os.path.join(args.log_dir, "args.json")
     with open(args_path, 'w') as file:
@@ -96,7 +90,7 @@ def evaluate(args):
     state_dict = torch.load(args.checkpoint_path)
 
     if args.multi_gpu:
-        state_dict = convert_model_to_single_gpu(state_dict)
+        state_dict = utils.convert_model_to_single_gpu(state_dict)
 
     model.load_state_dict(state_dict)
     end_time = time.time()

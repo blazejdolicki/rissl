@@ -1,5 +1,4 @@
 import argparse
-
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -14,31 +13,16 @@ import json
 import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
-
-from datasets.breakhis_fold_dataset import BreakhisFoldDataset
-from datasets.breakhis_dataset import BreakhisDataset
-from datasets.pcam_dataset import PCamDataset
-from utils import setup_logging, parse_args, fix_seed
-from models import models
 import time
 
+from datasets import get_transforms, get_dataset
+import utils
+from models import get_model
 
 def train(local_rank, args):
     if local_rank == 0:
         # set up logging to file
-        setup_logging(args.log_dir)
-
-        # save args to json
-        args_path = os.path.join(args.log_dir, "args.json")
-        with open(args_path, 'w') as file:
-            json.dump(vars(args), file, indent=4)
-
-        # set up mlflow
-        job_id = args.log_dir.split("/")[-1]
-        mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
-        mlflow.set_experiment(args.exp_name)
-        mlflow.start_run(run_name=job_id)
-        mlflow.log_params(vars(args))
+        utils.setup_logging(args.log_dir)
 
         # set up tensorboard
         tb_path = os.path.join(args.log_dir, "tb_logs")
@@ -64,28 +48,21 @@ def train(local_rank, args):
     )
 
     # fix seed
-    fix_seed(args.seed)
+    utils.fix_seed(args.seed)
 
-    # same transforms as for supervised equivariant networks
-    transform = transforms.Compose([transforms.Resize(256),
-                                    transforms.CenterCrop(224),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.485, 0.456, 0.406],  # statistics from ImageNet
-                                                         std=[0.229, 0.224, 0.225]),
-                                    ])
+    train_transform, test_transform = get_transforms(args)
 
-    if args.dataset == "breakhis_fold":
-        breakhis_dir = os.path.join(args.data_dir, "breakhis")
-        train_dataset = BreakhisFoldDataset(breakhis_dir, "train", args.fold, args.train_mag, transform)
-        test_dataset = BreakhisFoldDataset(breakhis_dir, "test", args.fold, args.test_mag, transform)
-    elif args.dataset == "breakhis":
-        train_dataset = BreakhisDataset(args.data_dir, "train", args.old_img_path_prefix, args.new_img_path_prefix,
-                                        transform)
-        test_dataset = BreakhisDataset(args.data_dir, "test", args.old_img_path_prefix, args.new_img_path_prefix,
-                                       transform)
-    elif args.dataset == "pcam":
-        train_dataset = PCamDataset(root_dir=args.data_dir, split="train", transform=transform)
-        test_dataset = PCamDataset(root_dir=args.data_dir, split="valid", transform=transform)
+    if local_rank == 0:
+        args.transform = utils.add_transform_to_args(train_transform, test_transform)
+
+        utils.setup_mlflow(args)
+
+        # save args to json
+        args_path = os.path.join(args.log_dir, "args.json")
+        with open(args_path, 'w') as file:
+            json.dump(vars(args), file, indent=4)
+
+    train_dataset, test_dataset, num_classes = get_dataset(train_transform, test_transform, args)
 
     if local_rank == 0:
         logging.info(f"Train size {len(train_dataset)}, test size {len(test_dataset)}")
@@ -101,22 +78,27 @@ def train(local_rank, args):
     mlflow.log_param("device", device)
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
-    model_args = {"num_classes": 2}  # BCE loss
-    model = models[args.model_type](**model_args).to(device)
+    model = get_model(args.model_type, num_classes, args).to(device)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum)
 
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
-                                                    max_lr=args.max_lr,
-                                                    div_factor=args.max_lr / args.start_lr,
-                                                    # div_factor = max_lr / start_lr
-                                                    final_div_factor=args.start_lr / args.end_lr,
-                                                    # final_div_factor = start_lr / end_lr
-                                                    pct_start=args.lr_pct_start,
-                                                    steps_per_epoch=len(train_loader),
-                                                    epochs=args.num_epochs)
+    if args.lr_scheduler_type == "OneCycleLR":
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
+                                                        max_lr=args.max_lr,
+                                                        div_factor=args.max_lr / args.start_lr,
+                                                        # div_factor = max_lr / start_lr
+                                                        final_div_factor=args.start_lr / args.end_lr,
+                                                        # final_div_factor = start_lr / end_lr
+                                                        pct_start=args.lr_pct_start,
+                                                        steps_per_epoch=len(train_loader),
+                                                        epochs=args.num_epochs)
+    elif args.lr_scheduler_type == "StepLR":
+        # step_size and gamma from Worrall and Welling, 2019
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
+    else:
+        raise ValueError("Incorrect type of learning rate scheduler.")
 
     train_losses = []
     train_accs = []
@@ -128,14 +110,6 @@ def train(local_rank, args):
         test_losses = []
         test_accs = []
 
-    if args.profile and local_rank == 0:
-        prof = torch.profiler.profile(
-            schedule=torch.profiler.schedule(wait=10, warmup=10, active=50, repeat=4),
-            on_trace_ready=torch.profiler.tensorboard_trace_handler(tb_path),
-            record_shapes=True,
-            with_stack=True)
-        prof.start()
-
     for epoch_idx in range(args.num_epochs):  # loop over the dataset multiple times
         if local_rank == 0:
             logging.info(f"Epoch {epoch_idx}")
@@ -146,7 +120,7 @@ def train(local_rank, args):
         num_correct = 0.0
         actual_train_size = 0
 
-        if args.profile:
+        if args.profile and local_rank == 0:
             prof = torch.profiler.profile(
                 schedule=torch.profiler.schedule(wait=10, warmup=10, active=50, repeat=4),
                 on_trace_ready=torch.profiler.tensorboard_trace_handler(tb_path),
@@ -158,7 +132,8 @@ def train(local_rank, args):
 
         for batch_idx, batch in enumerate(train_loader):
             batch_load_ms = (time.time() - start_load) * 1000.0
-            writer.add_scalar("Speed/batch_load_ms", batch_load_ms, batch_idx)
+            if local_rank == 0:
+                writer.add_scalar("Speed/batch_load_ms", batch_load_ms, batch_idx)
             inputs, labels = batch
             batch_size = inputs.shape[0]
 
@@ -169,7 +144,7 @@ def train(local_rank, args):
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = model(inputs)  # .squeeze() # use squeeze to make the shape compatible with the loss
+            outputs = model(inputs)
             batch_loss = criterion(outputs, labels)
 
             batch_loss.backward()
@@ -178,7 +153,9 @@ def train(local_rank, args):
             global_step = epoch_idx * len(train_loader) + batch_idx
             if local_rank == 0:
                 writer.add_scalar("learning_rate/lr_per_batch", optimizer.param_groups[0]["lr"], global_step)
-            scheduler.step()
+
+            if args.lr_scheduler_type == "OneCycleLR":
+                scheduler.step()
 
             train_epoch_loss += batch_size * batch_loss.item()
             actual_train_size += batch_size
@@ -192,6 +169,10 @@ def train(local_rank, args):
 
         if args.profile and local_rank == 0:
             prof.stop()
+
+        if args.lr_scheduler_type == "StepLR":
+            scheduler.step()
+
         # based on https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html#test-the-network-on-the-test-data
         # explicitly calculating actual train size instead of using len(train_dataset) is more robust
         # because if we drop the last batch, those two are not equal
@@ -203,7 +184,7 @@ def train(local_rank, args):
             writer.add_scalar("train/epoch_acc", train_epoch_acc, epoch_idx)
             writer.add_scalar("learning_rate/lr_per_epoch", optimizer.param_groups[0]["lr"], epoch_idx)
 
-        if epoch_idx % args.save_model_every_n_epochs == 0:
+        if epoch_idx % args.save_model_every_n_epochs == 0 and local_rank == 0:
             # save model every n epochs
             epoch_model_path = os.path.join(checkpoint_path, f"model_epoch_{epoch_idx}.pt")
             logging.info(f"Saving the model at epoch {epoch_idx} to {epoch_model_path} ")
@@ -268,9 +249,6 @@ def train(local_rank, args):
 
             logging.info("Finished validation")
 
-    if args.profile and local_rank == 0:
-        prof.stop()
-
     if not args.no_validation and local_rank == 0:
         mlflow.log_metric("best_test_loss", best_test_loss)
         mlflow.log_metric("best_test_acc", best_test_acc)
@@ -312,7 +290,7 @@ def train(local_rank, args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    args = parse_args(parser)
+    args = utils.parse_args(parser)
 
     # Total number of gpus availabe to us.
     args.world_size = args.ngpus_per_node * args.num_nodes
@@ -328,8 +306,3 @@ if __name__ == "__main__":
     mp.spawn(train, nprocs=args.ngpus_per_node, args=(args,))
 
     logging.info('Finished training')
-
-
-
-
-
