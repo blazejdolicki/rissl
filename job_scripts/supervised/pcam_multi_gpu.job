@@ -4,7 +4,7 @@
 #SBATCH --partition=gpu_titanrtx
 #SBATCH --job-name=pcam_multigpu
 #SBATCH --gpus-per-node=titanrtx:4
-#SBATCH --time=08:00:00
+#SBATCH --time=00:01:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 
 
@@ -48,7 +48,9 @@ else
 fi
 
 # supply ip address of the master node so that devices from other nodes have access to it
-python train.py --ip_address $(hostname -I) --ngpus_per_node 4 --dataset pcam --log_dir $CHECKPOINT_DIR --num_epochs 15 --profile
+python train_multi.py --ip_address $(hostname -I) --ngpus_per_node 4 --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR \
+                      --num_epochs 1 --batch_size 512 --no_early_stopping --model_type densenet --max_lr 0.1 \
+                      --growth_rate 24 --num_init_features 48  --lr_scheduler_type StepLR
 
 echo "finished"
 

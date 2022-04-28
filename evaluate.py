@@ -13,8 +13,9 @@ import time
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
-from utils import setup_logging, parse_args, fix_seed
-from models import models
+from datasets.pcam_dataset import PCamDataset
+import utils
+from models import get_model
 
 """
 This is a very flexible script that allows evaluating a trained model on an arbitrary dataset.
@@ -49,42 +50,53 @@ def evaluate(args):
         if not hasattr(args, arg) or getattr(args, arg) is None: # if arg doesn't exist or is None
             setattr(args, arg, getattr(train_args, arg))
 
-    job_id = args.log_dir.split("/")[-1]
-    mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
-    mlflow.set_experiment(args.exp_name)
-    mlflow.start_run(run_name=job_id)
-    mlflow.log_params(vars(args))
-    # setup_logging(args.log_dir)
+    utils.setup_logging(args.log_dir)
 
-    fix_seed(args.seed)
+    utils.fix_seed(args.seed)
 
-    # same transforms as for supervised equivariant networks
-    transform = transforms.Compose([transforms.Resize(256),
-                                    transforms.CenterCrop(224),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                         std=[0.229, 0.224, 0.225]),
-                                    ])
+    # here we have to set the transforms manually because reading them from saved config is not trivial to implement
+    transform = transforms.Compose([transforms.ToTensor()])
+
+    transform_list_str = [str(t) for t in transform.transforms]
+    assert transform_list_str == args.transform["test"], \
+        "Current image transformations are different than those used for evaluation during training"
+
+    utils.setup_mlflow(args)
+
+    args_path = os.path.join(args.log_dir, "args.json")
+    with open(args_path, 'w') as file:
+        json.dump(vars(args), file, indent=4)
 
     if args.dataset == "breakhis_fold":
+        num_classes = 4
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
+        num_classes = 4
         dataset = BreakhisDataset(args.data_dir, args.split, transform)
+    elif args.dataset == "pcam":
+        num_classes = 2
+        dataset = PCamDataset(root_dir=args.data_dir, split=args.split, transform=transform)
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
-    model_args = {"num_classes": 1}  # BCE loss
-    model = models[train_args.model_type](**model_args).to(device)
+    model = get_model(args.model_type, num_classes, args).to(device)
+
     # load model from checkpoint
     start_time = time.time()
-    model.load_state_dict(torch.load(args.checkpoint_path))
+
+    state_dict = torch.load(args.checkpoint_path)
+
+    if args.multi_gpu:
+        state_dict = utils.convert_model_to_single_gpu(state_dict)
+
+    model.load_state_dict(state_dict)
     end_time = time.time()
     logging.debug(f"Loading the model took {end_time - start_time} seconds")
 
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
 
     epoch_loss = 0.0
     correct = 0.0
@@ -97,15 +109,16 @@ def evaluate(args):
             batch_size = inputs.shape[0]
 
             inputs = inputs.to(device)
-            labels = labels.to(device).float()
+            labels = labels.to(device)
 
             # calculate outputs by running images through the network
-            outputs = model(inputs).squeeze() # use squeeze to make the shape compatible with the loss
+            outputs = model(inputs)
             batch_loss = criterion(outputs, labels)
 
             epoch_loss += batch_size * batch_loss.item()
             actual_data_size += batch_size
-            correct += ((outputs > 0.0) == labels).sum().item()
+            preds = outputs.argmax(dim=1)
+            correct += (preds == labels).sum().item()
 
     epoch_loss = epoch_loss / actual_data_size
     epoch_acc = 100 * correct / actual_data_size
@@ -124,7 +137,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, help='Dataset used for evaluation')
     parser.add_argument('--data_dir', type=str, help='Directory of the data')
-    parser.add_argument('--split', type=str, required=True, choices=["train", "test"])
+    parser.add_argument('--split', type=str, required=True, choices=["train", "test", "valid"])
     parser.add_argument('--checkpoint_path', type=str, required=True,
                         help="Path to a trained model used for evaluation")
     parser.add_argument('--exp_name', type=str,

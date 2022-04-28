@@ -4,6 +4,8 @@ import sys
 import torch
 import numpy as np
 import random
+import mlflow
+import copy
 
 from models import models
 
@@ -26,6 +28,14 @@ def setup_logging(output_dir):
 
     logging.getLogger('PIL').setLevel(logging.WARNING)
 
+def setup_mlflow(args):
+    job_id = args.log_dir.split("/")[-1]
+    mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
+    mlflow.set_experiment(args.exp_name)
+    mlflow.start_run(run_name=job_id)
+    mlflow_args = copy.deepcopy(args)
+    mlflow_args.transform = "See args.json"
+    mlflow.log_params(vars(mlflow_args))
 
 def fix_seed(seed):
     logging.info(f"Random seed: {seed}")
@@ -68,6 +78,8 @@ def read_args(parser):
     parser.add_argument('--num_workers', type=int, default=0, help="Number of workers used to load the data")
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--model_type', type=str, default='resnet18', help='Model architecture')
+    parser.add_argument('--lr_scheduler_type', type=str, choices=["StepLR", "OneCycleLR"],
+                        help='Type of learning rate scheduler used for training.')
     parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")
     parser.add_argument('--start_lr', type=float, default=None, help="Initial learning rate at the start")
     parser.add_argument('--end_lr', type=float, default=None, help="Final learning rate at the end")
@@ -105,7 +117,7 @@ def read_args(parser):
             return None
         return float(value)
 
-    parser.add_argument('--N', type=int, help='Size of cyclic group for GCNN and maximum frequency for HNET')
+    parser.add_argument('--N', type=int, default=4, help='Size of cyclic group for GCNN and maximum frequency for HNET')
     parser.add_argument('--F', type=none_or_float, default=None,
                         help='Frequency cut-off: maximum frequency at radius "r" is "F*r"')
     parser.add_argument('--sigma', type=none_or_float, default=None,
@@ -116,6 +128,10 @@ def read_args(parser):
     parser.set_defaults(fixparams=False)
     parser.add_argument('--deltaorth', dest="deltaorth", action="store_true",
                         help='Use delta orthogonal initialization in conv layers')
+    # DenseNet
+    parser.add_argument('--growth_rate', type=int)
+    parser.add_argument('--num_init_features', type=int)
+
     parser.set_defaults(deltaorth=False)
     args = parser.parse_args()
     return args
@@ -164,3 +180,24 @@ def check_args(args):
     assert args.model_type in models, \
         f"Model {args.model_type} is not supported. Choose one of the following models: {list(models.keys())}"
     assert not args.multi_gpu or args.ip_address
+
+
+def convert_model_to_single_gpu(state_dict):
+    # create new OrderedDict that does not contain `module.`
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:]  # remove `module.`
+        new_state_dict[name] = v
+    return new_state_dict
+
+
+def add_transform_to_args(train_transform, test_transform):
+    transform = {}
+
+    train_transform_list_str = [str(t) for t in train_transform.transforms]
+    transform["train"] = train_transform_list_str
+
+    test_transform_list_str = [str(t) for t in test_transform.transforms]
+    transform["test"] = test_transform_list_str
+    return transform

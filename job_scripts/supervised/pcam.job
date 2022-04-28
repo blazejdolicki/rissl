@@ -4,9 +4,10 @@
 #SBATCH --partition=gpu_titanrtx_shared
 #SBATCH --job-name=pcam
 #SBATCH --gpus-per-node=titanrtx:1
-#SBATCH --time=5:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
-
+#SBATCH --mail-type=END
+#SBATCH --mail-user=blazejd.shopping@gmail.com
 
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
@@ -47,9 +48,8 @@ else
   DATA_DIR=$DATA_HOME_DIR
 fi
 
-python train.py --dataset pcam --data_dir $DATA_DIR --old_img_path_prefix $OLD_IMG_PATH_PREFIX \
-                  --new_img_path_prefix $NEW_IMG_PATH_PREFIX --log_dir $CHECKPOINT_DIR --num_epochs 2 \
-                  --batch_size=128 --num_workers=1
+python train.py --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR --num_epochs 200 \
+                  --batch_size=128 --num_workers=1 --model_type resnext50_32x4d --lr_warmup 10 --max_lr 0.1
 
 echo "finished"
 
