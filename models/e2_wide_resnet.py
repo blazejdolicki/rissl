@@ -140,6 +140,8 @@ class Wide_ResNet(torch.nn.Module):
                  conv2triv: bool = True,
                  ):
         super(Wide_ResNet, self).__init__()
+
+        print("N rotations", N, "r", r)
         
         assert ((depth - 4) % 6 == 0), 'Wide-resnet depth should be 6n+4'
         n = int((depth - 4) / 6)
@@ -235,7 +237,7 @@ class Wide_ResNet(torch.nn.Module):
             elif isinstance(module, torch.nn.Linear):
                 module.bias.data.zero_()
         
-        print("MODEL TOPOLOGY:")
+        # print("MODEL TOPOLOGY:")
         # for i, (name, mod) in enumerate(self.named_modules()):
         #     print(f"\t{i} - {name}")
         # for i, (name, mod) in enumerate(self.named_modules()):
