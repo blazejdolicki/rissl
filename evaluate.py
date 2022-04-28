@@ -15,7 +15,7 @@ from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.pcam_dataset import PCamDataset
 import utils
-from models import models
+from models import get_model
 
 """
 This is a very flexible script that allows evaluating a trained model on an arbitrary dataset.
@@ -54,7 +54,7 @@ def evaluate(args):
 
     utils.fix_seed(args.seed)
 
-    # same transforms as for supervised equivariant networks
+    # here we have to set the transforms manually because reading them from saved config is not trivial to implement
     transform = transforms.Compose([transforms.ToTensor()])
 
     transform_list_str = [str(t) for t in transform.transforms]
@@ -68,10 +68,13 @@ def evaluate(args):
         json.dump(vars(args), file, indent=4)
 
     if args.dataset == "breakhis_fold":
+        num_classes = 4
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
+        num_classes = 4
         dataset = BreakhisDataset(args.data_dir, args.split, transform)
     elif args.dataset == "pcam":
+        num_classes = 2
         dataset = PCamDataset(root_dir=args.data_dir, split=args.split, transform=transform)
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
@@ -79,10 +82,7 @@ def evaluate(args):
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
-    model_args = {"num_classes": 2}  # CE loss
-    densenet = {"growth_rate": args.growth_rate, "block_config": (3, 3, 3), "num_init_features": args.num_init_features}
-    model_args = {**model_args, **densenet}
-    model = models[train_args.model_type](**model_args).to(device)
+    model = get_model(args.model_type, num_classes, args).to(device)
 
     # load model from checkpoint
     start_time = time.time()
