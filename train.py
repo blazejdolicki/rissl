@@ -21,6 +21,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = utils.parse_args(parser)
 
+    # set up logging to file
+    utils.setup_logging(args.log_dir)
+
     # fix seed
     utils.fix_seed(args.seed)
 
