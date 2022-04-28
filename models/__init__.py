@@ -11,6 +11,7 @@ models = {
     "resnext101_32x8d": torchvision.models.resnext101_32x8d,
     "wide_resnet50_2": torchvision.models.wide_resnet50_2,
     "wide_resnet101_2": torchvision.models.wide_resnet101_2,
+    "densenet121": torchvision.models.densenet121,
     "densenet": torchvision.models.DenseNet,
     "e2_wide_resnet28_10R": e2wrn28_10R,
     "e2_wide_resnet28_7R": e2wrn28_7R
