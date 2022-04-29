@@ -1,5 +1,6 @@
 # @package _global_
-# Config adapted from train_dino.yaml with resnet instead of vision transformer
+# Config adapted from train_dino.yaml with resnet instead of vision transformer and based on
+# https://dl.fbaipublicfiles.com/dino/dino_resnet50_pretrain/args.txt
 config:
   VERBOSE: False
   LOG_FREQUENCY: 10
@@ -31,8 +32,8 @@ config:
         - name: ImgPilToMultiCrop
           total_num_crops: 10
           size_crops: [224, 96]
-          num_crops: [2, 8]
-          crop_scales: [[0.4, 1], [0.05, 0.4]]
+          num_crops: [2, 6]
+          crop_scales: [[0.14, 1], [0.05, 0.14]]
         - name: RandomHorizontalFlip
           p: 0.5
         - name: ImgPilColorDistortion
@@ -58,39 +59,34 @@ config:
     name: ""
   MODEL:
     TRUNK:
-      NAME: vision_transformer
-      VISION_TRANSFORMERS:
-        IMAGE_SIZE: 224
-        PATCH_SIZE: 16
-        NUM_LAYERS: 12
-        NUM_HEADS: 6
-        HIDDEN_DIM: 384
-        MLP_DIM: 1532
-        CLASSIFIER: token
-        DROPOUT_RATE: 0
-        ATTENTION_DROPOUT_RATE: 0
-        QKV_BIAS: True
-        DROP_PATH_RATE: 0.1 # stochastic depth dropout probability
+      NAME: resnet
+      RESNETS:
+        DEPTH: 50
     HEAD:
       PARAMS: [
-              ["swav_head", {"use_weight_norm_prototypes": True, "dims": [384, 2048, 2048, 256], "use_bn": False, "return_embeddings": False, "activation_name": "GELU", "num_clusters": [65536]}],
+              # dims based on the head of ResNet50 when running `python main_dino.py --arch resnet50`
+              ["swav_head", {"use_weight_norm_prototypes": True, "dims": [2048, 2048, 2048, 256], "use_bn": True, "return_embeddings": False, "activation_name": "GELU", "num_clusters": [60000]}],
       ]
+    # the model parameters that should be frozen for certain specific number of iterations.
+    # i.e the parameters are frozen for specified iterations and then start training.
+    # DINO in the args of RN50 in the repo freeze the last (output) layer for the first epoch.
+    # Typically doing so during the first epoch helps training. Try freezing it for more epochs if the loss does not decrease.
     TEMP_FROZEN_PARAMS_ITER_MAP: [
       ['module.heads.0.prototypes0.weight_v', 1251],
       ['module.heads.0.prototypes0.weight_g', 1251],
       ]
     AMP_PARAMS:
       AMP_TYPE: pytorch
-      USE_AMP: True
+      USE_AMP: False
   LOSS:
     name: dino_loss
     dino_loss:
       momentum: 0.996
-      teacher_temp_warmup_iters: 37530 # 30 epochs - TODO adjust that later
+      teacher_temp_warmup_iters: 37530 # 30 epochs - Paper uses 50 epochs for RN50
       teacher_temp_min: 0.04
       teacher_temp_max: 0.07
       ema_center: 0.9
-      normalize_last_layer: false
+      normalize_last_layer: true
   OPTIMIZER:
       name: adamw
       momentum: 0.9
@@ -103,11 +99,11 @@ config:
           name: composite
           schedulers:
             - name: linear
-              start_value: 0.00001
-              end_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
+              start_value: 0.0 # based on the implementation of cosine_scheduler() in DINO repo
+              end_value: 0.3 # determined according to formula 0.3*(batch_size/256)
             - name: cosine
-              start_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
-              end_value: 0.00001
+              start_value: 0.3 # determined according to formula 0.3*(batch_size/256)
+              end_value: 0.0048
           update_interval: epoch
           interval_scaling: [rescaled, fixed]
           lengths: [0.0333, 0.9667]
@@ -115,23 +111,23 @@ config:
           name: composite
           schedulers:
             - name: linear
-              start_value: 0.00001
-              end_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
+              start_value: 0.0 # based on the implementation of cosine_scheduler() in DINO repo
+              end_value: 0.3 # determined according to formula 0.0005*(batch_size/256)
             - name: cosine
-              start_value: 0.0005 # determined according to formula 0.0005*(batch_size/256)
-              end_value: 0.00001
+              start_value: 0.3 # determined according to formula 0.0005*(batch_size/256)
+              end_value: 0.0048
           update_interval: epoch
           interval_scaling: [rescaled, fixed]
           lengths: [0.0333, 0.9667]
         weight_decay:
           name: cosine
-          start_value: 0.04
-          end_value: 0.4
+          start_value: 0.000001
+          end_value: 0.000001
           update_interval: epoch
         weight_decay_head:
           name: cosine
-          start_value: 0.04
-          end_value: 0.4
+          start_value: 0.000001
+          end_value: 0.000001
           update_interval: epoch
   DISTRIBUTED: # TODO this might need to be changed
     BACKEND: nccl
