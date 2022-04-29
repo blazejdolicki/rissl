@@ -1,0 +1,94 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p gpu_titanrtx
+#SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
+#SBATCH --job-name=train_pcam_dino_rn50
+#SBATCH -t 3-12:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+
+NUM_WORKERS=2
+NUM_GPUS=1
+NUM_TASKS=1
+NUM_MACHINES=1
+TRAIN=train/
+SOURCE=$HOME/thesis/hissl
+SINGULARITYIMAGE=$HOME/thesis/hissl_20210922_np121_h5py.sif
+CONFIG_PATH=blazej/pretrain/train_dino_resnet
+LOGS_DIR=/project/bdolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
+
+DATA_HOME_DIR=$HOME"/thesis/ssl-histo/data/pcam"
+DATA_SCRATCH_DIR="$TMPDIR"/"data/pcam"
+
+use_scratch=true
+
+if [ "$use_scratch" = true ] ; then
+
+  mkdir -p $DATA_SCRATCH_DIR
+  start_time=$(date '+%B %V %T')
+  echo "${start_time}: Copying data from $DATA_HOME_DIR to $DATA_SCRATCH_DIR..."
+
+  # Note: If the source directory has a trailing slash, rsync will copy only the directory
+  # contents to the destination directory. When the trailing slash is omitted, rsync copies the source
+  # directory inside the destination directory.
+
+  rsync -az $DATA_HOME_DIR/ $DATA_SCRATCH_DIR # add -v option for verbose
+  end_time=$(date '+%B %V %T')
+  echo "${end_time}: Finished copying data to scratch"
+
+  OLD_IMG_PATH_PREFIX=$DATA_HOME_DIR
+  NEW_IMG_PATH_PREFIX=$DATA_SCRATCH_DIR
+  DATA_DIR=$DATA_SCRATCH_DIR
+else
+  echo "Data will not be copied to scratch"
+  OLD_IMG_PATH_PREFIX=None
+  NEW_IMG_PATH_PREFIX=None
+  DATA_DIR=$DATA_HOME_DIR
+fi
+
+run_train()
+{
+  echo "python3 tools/run_distributed_engines_hissl.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH\
+    config.DATA.TRAIN.DATASET_NAMES=[pcam] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
+    +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train"] \
+    config.DATA.TEST.DATASET_NAMES=[pcam] \
+    config.DATA.TEST.DATA_SOURCES=[disk_folder] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
+    +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+    config.OPTIMIZER.num_epochs=300"
+}
+
+slurm_submit()
+{
+  SINGULARITYENV_VISSL_DATASET_CATALOG_PATH=/hissl/custom_catalog.json singularity exec --no-home --nv \
+      --bind $SOURCE:/hissl \
+      --bind $HOME/thesis/ssl-histo/config/blazej:/hissl/configs/config/blazej \
+      --bind $LOGS_DIR \
+      --bind $DATA_DIR \
+      --pwd /hissl \
+      $SINGULARITYIMAGE \
+      $COMMAND &
+}
+
+cd $SOURCE
+
+# for multi-machine GPUs: stops the job in case of NCCL ASYNC errors
+export NCCL_ASYNC_ERROR_HANDLING=1
+export NCCL_DEBUG=INFO
+
+# to silence this error:
+# "ERROR: ld.so: object '/sara/tools/xalt/xalt/lib64/libxalt_init.so'
+# from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored."
+unset LD_PRELOAD
+
+COMMAND=$(run_train)
+
+echo $(slurm_submit $COMMAND)
+
+# move slurm output from default location to logs after the job is finished
+mv ../ssl-histo/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
