@@ -52,7 +52,12 @@ if __name__ == "__main__":
     model = get_model(args.model_type, num_classes, args).to(device)
 
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum)
+    if args.optimizer == "sgd":
+        optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    elif args.optimizer == "adam":
+        optimizer = optim.Adam(model.parameters(), lr=args.max_lr, weight_decay=args.weight_decay)
+    else:
+        raise ValueError("Incorrect optimizer")
 
     if args.lr_scheduler_type == "OneCycleLR":
         scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,

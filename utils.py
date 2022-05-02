@@ -9,6 +9,7 @@ import copy
 
 from models import models
 
+
 def setup_logging(output_dir):
     """
     Setup various logging streams: stdout and file handlers.
@@ -28,6 +29,7 @@ def setup_logging(output_dir):
 
     logging.getLogger('PIL').setLevel(logging.WARNING)
 
+
 def setup_mlflow(args):
     job_id = args.log_dir.split("/")[-1]
     mlflow.set_tracking_uri(f"file:///{args.mlflow_dir}")
@@ -36,6 +38,7 @@ def setup_mlflow(args):
     mlflow_args = copy.deepcopy(args)
     mlflow_args.transform = "See args.json"
     mlflow.log_params(vars(mlflow_args))
+
 
 def fix_seed(seed):
     logging.info(f"Random seed: {seed}")
@@ -47,11 +50,13 @@ def fix_seed(seed):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
+
 def parse_args(parser):
     args = read_args(parser)
     args = modify_args(args)
     check_args(args)
     return args
+
 
 def read_args(parser):
     """
@@ -78,6 +83,10 @@ def read_args(parser):
     parser.add_argument('--num_workers', type=int, default=0, help="Number of workers used to load the data")
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--model_type', type=str, default='resnet18', help='Model architecture')
+    parser.add_argument('--optimizer', type=str, default='sgd', choices=['sgd', 'adam'],
+                        help="Type of optimizer used for training")
+    parser.add_argument('--weight_decay', type=float, default=0.0,
+                        help="L2 penalty of the model weights that improves regularization, switched off by default")
     parser.add_argument('--lr_scheduler_type', type=str, choices=["StepLR", "OneCycleLR"],
                         help='Type of learning rate scheduler used for training.')
     parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")
@@ -201,3 +210,6 @@ def add_transform_to_args(train_transform, test_transform):
     test_transform_list_str = [str(t) for t in test_transform.transforms]
     transform["test"] = test_transform_list_str
     return transform
+
+
+
