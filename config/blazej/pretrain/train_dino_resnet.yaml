@@ -30,7 +30,7 @@ config:
       LABEL_TYPE: sample_index    # just an implementation detail. Label isn't used
       TRANSFORMS:
         - name: ImgPilToMultiCrop
-          total_num_crops: 10
+          total_num_crops: 8
           size_crops: [224, 96]
           num_crops: [2, 6]
           crop_scales: [[0.14, 1], [0.05, 0.14]]
@@ -40,10 +40,10 @@ config:
           strength: 0.5
         - name: ImgPilMultiCropRandomApply
           transforms: [{"name": "ImgPilGaussianBlur", "p": 1., "radius_min": 0.1, "radius_max": 2.0}]
-          prob: [1., 0.1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+          prob: [1., 0.1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
         - name: ImgPilMultiCropRandomApply
           transforms: [{"name": "ImgPilRandomSolarize", "p": 1.}]
-          prob: [0., 0.2, 0., 0., 0, 0, 0, 0, 0, 0]
+          prob: [0., 0.2, 0., 0., 0, 0, 0, 0]
         - name: ToTensor
         - name: Normalize # TODO change means and stds from ImageNet to our dataset
           mean: [0.485, 0.456, 0.406]
