@@ -83,6 +83,10 @@ def read_args(parser):
     parser.add_argument('--num_workers', type=int, default=0, help="Number of workers used to load the data")
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--model_type', type=str, default='resnet18', help='Model architecture')
+    parser.add_argument('--optimizer', type=str, default='sgd', choices=['sgd', 'adam'],
+                        help="Type of optimizer used for training")
+    parser.add_argument('--weight_decay', type=float, default=0.0,
+                        help="L2 penalty of the model weights that improves regularization, switched off by default")
     parser.add_argument('--lr_scheduler_type', type=str, choices=["StepLR", "OneCycleLR"],
                         help='Type of learning rate scheduler used for training.')
     parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")

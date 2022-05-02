@@ -8,6 +8,8 @@ parser.add_argument("--log_dir", type=str, default="logs",
                     help="Directory with logs: checkpoints, parameters, metrics")
 parser.add_argument('--exp_name', type=str, default="hp_tuning",
                     help='MLFlow experiment folder where the results will be logged')
+parser.add_argument('--data_dir', type=str)
+
 args = parser.parse_args()
 
 max_lrs = [0.1, 0.01, 0.001, 0.0001]
@@ -15,7 +17,7 @@ weight_decays = [0.0001, 0.00001, 0.000001]
 lr_scheduler_types = ["StepLR", "OneCycleLR"]
 optimizers = ["adam", "sgd"]
 
-num_runs = 5 # TODO: Change after testing
+num_runs = 24
 hyperparams = [max_lrs, weight_decays, lr_scheduler_types, optimizers]
 runs = sample_runs(num_runs, *hyperparams)
 
@@ -23,12 +25,16 @@ for i, run in enumerate(runs):
     log_dir = os.path.join(args.log_dir, f"run_{i}")
     subprocess.run(["python", "train.py",
                     "--dataset", "pcam",
+                    "--data_dir", str(args.data_dir),
                     "--log_dir", str(log_dir),
                     "--exp_name", str(args.exp_name),
+                    "--mlflow_dir", "/home/b.dolicki/mlflow_runs",
                     "--model_type", "resnext50_32x4d",
-                    "--num_epochs", str(1), # TODO change to 1 after testing
+                    "--batch_size", str(512),
+                    "--num_workers", str(1),
+                    "--num_epochs", str(50),
                     "--max_lr", str(run[0]),
-                    "--wd", str(run[1]),
-                    "--lr_scheduler_type", str(runs[2]),
-                    "--optimizer", str(runs[3])
+                    "--weight_decay", str(run[1]),
+                    "--lr_scheduler_type", str(run[2]),
+                    "--optimizer", str(run[3])
                     ])
