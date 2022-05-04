@@ -1,5 +1,6 @@
 import torchvision
 from models.e2_wide_resnet import e2wrn28_10R, e2wrn28_7R
+from models.e2_resnet import E2ResNet, E2BasicBlock
 
 models = {
     "resnet18": torchvision.models.resnet18,
@@ -13,18 +14,26 @@ models = {
     "wide_resnet101_2": torchvision.models.wide_resnet101_2,
     "densenet121": torchvision.models.densenet121,
     "densenet": torchvision.models.DenseNet,
+    # my e2 implementations
+    "e2_resnet18": E2ResNet,
+    # e2cnn_exp implementations
     "e2_wide_resnet28_10R": e2wrn28_10R,
     "e2_wide_resnet28_7R": e2wrn28_7R
 }
 
+
 def get_model(model_type, num_classes, args):
     model_args = {"num_classes": num_classes}
-    densenet_args = {"growth_rate": args.growth_rate,
-                     "block_config": (3, 3, 3),
-                     "num_init_features": args.num_init_features}
+    # densenet_args = {"growth_rate": args.growth_rate,
+    #                  "block_config": (3, 3, 3),
+    #                  "num_init_features": args.num_init_features}
+    e2_resnet = {"block": E2BasicBlock, "layers": [2, 2, 2, 2]}
 
     if model_type == "densenet":
-        model_args = {**model_args, **densenet_args}
-
+        pass
+        # model_args = {**model_args, **densenet_args}
+    if model_type == "e2_resnet18":
+        model_args = {**model_args, **e2_resnet}
+    print("resnet18")
     return models[model_type](**model_args)
 
