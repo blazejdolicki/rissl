@@ -64,9 +64,8 @@ class E2BasicBlock(nn.EquivariantModule):
         self.relu2 = nn.ReLU(self.out_type, inplace=True)
         self.stride = stride
 
-        # Here we are omitting `shortcut` as this implementation doesn't seem to be using it.
-        # If there are problems with shapes between layers, you might want to revisit this.
-        # I think maybe `downsample` in resnet.py is the equivalent of `shortcut` in e2_wide_resnet.py
+
+        # `downsample` in resnet.py is the equivalent of `shortcut` in e2_wide_resnet.py
 
         self.downsample = None
         if stride != 1 or self.in_type != self.out_type:
