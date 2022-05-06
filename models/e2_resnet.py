@@ -2,6 +2,7 @@ import torch
 from torch import Tensor
 from typing import Type, Any, Callable, Union, List, Optional
 import logging
+import torch.nn.functional as F
 
 from e2cnn import nn
 from e2cnn import gspaces
@@ -360,7 +361,6 @@ class E2ResNet(torch.nn.Module):
             self.mp = nn.GroupPooling(self.layer4.out_type)
 
         linear_input_features = self.mp.out_type.size if not self.conv2triv else self.layer4.out_type.size
-        self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
         # TODO not sure about the linear input size here
         self.fc = torch.nn.Linear(linear_input_features * block.expansion, num_classes)
 
@@ -514,7 +514,10 @@ class E2ResNet(torch.nn.Module):
         if not self.conv2triv:
             x = self.mp(x)
 
-        x = self.avgpool(x)
+        x = x.tensor
+
+        b, c, w, h = x.shape
+        x = F.avg_pool2d(x, (w, h))
         x = torch.flatten(x, 1)
         x = self.fc(x)
 
