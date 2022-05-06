@@ -241,7 +241,7 @@ class E2ResNet(torch.nn.Module):
         :param num_classes:
         :param N:
         :param r:
-        :param f:
+        :param f: If the model is flip equivariant.
         :param main_fiber:
         :param inner_fiber:
         :param F:
@@ -306,7 +306,7 @@ class E2ResNet(torch.nn.Module):
         self.in_lifting_type = nn.FieldType(self.gspace, [self.gspace.trivial_repr] * 3)
 
         # field type for the first lifted layer
-        self.next_in_type = FIBERS[main_fiber](self.gspace, self.inplanes, fixparams=True)
+        self.next_in_type = FIBERS[main_fiber](self.gspace, self.inplanes, fixparams=self._fixparams)
 
         # number of output channels in each outer layer
         num_channels = [64, 128, 256, 512]
@@ -385,6 +385,9 @@ class E2ResNet(torch.nn.Module):
                 elif isinstance(m, E2BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
 
+        num_params = sum([p.numel() for p in self.parameters() if p.requires_grad])
+        print("Total number of learnable parameters:", num_params)
+
     def _make_layer(self, block: Type[Union[E2BasicBlock, E2Bottleneck]], planes: int, num_blocks: int,
                     stride: int = 1, dilate: bool = False,
                     main_fiber: str = "regular",
@@ -392,7 +395,7 @@ class E2ResNet(torch.nn.Module):
                     out_fiber: str = None,
                     ) -> nn.SequentialModule:
         self._layer += 1
-        logging.info("Start building layer", self._layer)
+        logging.info(f"Start building layer {self._layer}")
 
         downsample = None
         previous_dilation = self.dilation
@@ -460,7 +463,7 @@ class E2ResNet(torch.nn.Module):
         layers.append(last_block)
         self.next_in_type = out_f
 
-        logging.info("Built layer", self._layer)
+        logging.info(f"Built layer {self._layer}")
 
         return nn.SequentialModule(*layers)
 
