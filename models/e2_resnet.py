@@ -21,7 +21,6 @@ class E2BasicBlock(nn.EquivariantModule):
         inner_fiber: nn.FieldType,
         out_fiber: nn.FieldType = None,
         stride: int = 1,
-        downsample: Optional[nn.EquivariantModule] = None,
         groups: int = 1,
         base_width: int = 64,
         dilation: int = 1,
@@ -68,6 +67,27 @@ class E2BasicBlock(nn.EquivariantModule):
         # Here we are omitting `shortcut` as this implementation doesn't seem to be using it.
         # If there are problems with shapes between layers, you might want to revisit this.
         # I think maybe `downsample` in resnet.py is the equivalent of `shortcut` in e2_wide_resnet.py
+
+        self.downsample = None
+        if stride != 1 or self.in_type != self.out_type:
+            self.downsample = nn.SequentialModule(
+                conv1x1(self.in_type, self.out_type, stride=stride, bias=False, sigma=sigma, F=F, initialize=False),
+                nn.InnerBatchNorm(self.out_type),
+                )
+
+        # FIXME this might not work for BottleNeck
+
+        # if stride != 1 or self.inplanes != planes * block.expansion:
+        #     # TODO Not sure if this works for E2
+        #     print("changed exp out fiber")
+        #     print(f"stride {stride} self.inplanes {self.inplanes} planes*block.expansion {planes * block.expansion}")
+        #     exp_out_fiber = FIBERS[main_fiber](self.gspace, planes * block.expansion, fixparams=self._fixparams)
+        #     print(f"downsampling: main_type {main_type}, next_in_type {self.next_in_type}, exp_out_fiber {exp_out_fiber}")
+        #     print("")
+        #     downsample = nn.SequentialModule(
+        #         conv1x1(self.next_in_type, exp_out_fiber, stride=stride),
+        #         nn.InnerBatchNorm(exp_out_fiber),
+        #     )
 
 
     def forward(self, x: Tensor) -> Tensor:
@@ -387,14 +407,7 @@ class E2ResNet(torch.nn.Module):
         main_type = FIBERS[main_fiber](self.gspace, planes, fixparams=self._fixparams)
         inner_class = FIBERS[inner_fiber](self.gspace, planes, fixparams=self._fixparams)
 
-        if stride != 1 or self.inplanes != planes * block.expansion:
-            # TODO Not sure if this works for E2
-            exp_out_fiber = nn.FieldType(main_type.gspace,
-                                         planes * block.expansion * [main_type.gspace.representations[main_fiber]])
-            downsample = nn.SequentialModule(
-                conv1x1(main_type, exp_out_fiber, stride),
-                nn.InnerBatchNorm(exp_out_fiber),
-            )
+
 
         if out_fiber is None:
             out_fiber = main_fiber
@@ -407,21 +420,20 @@ class E2ResNet(torch.nn.Module):
                             inner_fiber=inner_class,
                             out_fiber=out_f,
                             stride=stride,
-                            downsample=downsample,
+                            # downsample=downsample,
                             groups=self.groups,
                             base_width=self.base_width,
                             dilation=previous_dilation,
                             sigma=self._sigma,
                             F=self._F)
         layers.append(first_block)
-        self.next_in_type = out_fiber
 
         # E2BasicBlock.expansion = 1 and E2Bottleneck.expansion = 4
         # add intermediate blocks
         self.inplanes = planes * block.expansion
 
         # create new field type with `planes * block.expansion` channels
-        self.next_in_type = FIBERS[main_fiber](self.gspace, self.inplanes, fixparams=True)
+        self.next_in_type = FIBERS[main_fiber](self.gspace, self.inplanes, fixparams=self._fixparams)
         # TODO: not sure if the number of channels here checks out given `expansion`
         out_f = self.next_in_type
         for _ in range(1, num_blocks-1):
