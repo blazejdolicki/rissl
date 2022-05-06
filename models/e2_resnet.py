@@ -55,10 +55,10 @@ class E2BasicBlock(nn.EquivariantModule):
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
 
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
-        self.conv1 = conv(self.in_type, inner_class, sigma=sigma, F=F, initialize=False)
+        self.conv1 = conv(self.in_type, inner_class, stride=stride, sigma=sigma, F=F, initialize=False)
         self.bn1 = nn.InnerBatchNorm(inner_class)
         self.relu = nn.ReLU(inner_class, inplace=True)
-        self.conv2 = conv(inner_class, self.out_type, stride=stride, sigma=sigma, F=F, initialize=False)
+        self.conv2 = conv(inner_class, self.out_type, sigma=sigma, F=F, initialize=False)
         self.bn2 = nn.InnerBatchNorm(self.out_type)
         # add another relu because the shape changes
         self.relu2 = nn.ReLU(self.out_type, inplace=True)
