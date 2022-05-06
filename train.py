@@ -32,10 +32,7 @@ if __name__ == "__main__":
 
     utils.setup_mlflow(args)
 
-    # save args to json
-    args_path = os.path.join(args.log_dir, "args.json")
-    with open(args_path, 'w') as file:
-        json.dump(vars(args), file, indent=4)
+
 
     train_dataset, test_dataset, num_classes = get_dataset(train_transform, test_transform, args)
 
@@ -50,6 +47,17 @@ if __name__ == "__main__":
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
     model = get_model(args.model_type, num_classes, args).to(device)
+
+    num_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
+    # separate thousands with commas
+    num_params = "{:,}".format(num_params)
+    logging.info(f"Total number of learnable parameters: {num_params}")
+    args.num_params = num_params
+
+    # save args to json
+    args_path = os.path.join(args.log_dir, "args.json")
+    with open(args_path, 'w') as file:
+        json.dump(vars(args), file, indent=4)
 
     criterion = torch.nn.CrossEntropyLoss()
     if args.optimizer == "sgd":
