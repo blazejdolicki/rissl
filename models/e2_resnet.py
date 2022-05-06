@@ -61,7 +61,8 @@ class E2BasicBlock(nn.EquivariantModule):
         self.relu = nn.ReLU(inner_class, inplace=True)
         self.conv2 = conv(inner_class, self.out_type, stride=stride, sigma=sigma, F=F, initialize=False)
         self.bn2 = nn.InnerBatchNorm(self.out_type)
-        self.downsample = downsample
+        # add another relu because the shape changes
+        self.relu2 = nn.ReLU(self.out_type, inplace=True)
         self.stride = stride
 
         # Here we are omitting `shortcut` as this implementation doesn't seem to be using it.
@@ -83,7 +84,7 @@ class E2BasicBlock(nn.EquivariantModule):
             identity = self.downsample(x)
 
         out += identity
-        out = self.relu(out)
+        out = self.relu2(out)
 
         return out
 
