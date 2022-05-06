@@ -356,12 +356,11 @@ class E2ResNet(torch.nn.Module):
                                        dilate=replace_stride_with_dilation[2],
                                        main_fiber=main_fiber, inner_fiber=inner_fiber, out_fiber=out_fiber)
 
-        if self.conv2triv:
+        if not self.conv2triv:
             self.mp = nn.GroupPooling(self.layer4.out_type)
 
-        # TODO Double check what this layer is doing
+        linear_input_features = self.mp.out_type.size if not self.conv2triv else self.layer4.out_type.size
         self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
-        linear_input_features = self.mp.out_type.size if self.conv2triv else self.layer4.out_type.size
         # TODO not sure about the linear input size here
         self.fc = torch.nn.Linear(linear_input_features * block.expansion, num_classes)
 
@@ -512,7 +511,7 @@ class E2ResNet(torch.nn.Module):
         x = self.layer4(x)
 
         # TODO group pooling?, finish the stuff below
-        if self.conv2triv:
+        if not self.conv2triv:
             x = self.mp(x)
 
         x = self.avgpool(x)
