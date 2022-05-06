@@ -65,6 +65,9 @@ def read_args(parser):
     parser.add_argument('--dataset', type=str, help='Dataset used for training and evaluation')
     parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data',
                         help='Directory of the data')
+    parser.add_argument('--sample', type=float, default=None,
+                        help='A fraction or number of examples that will be subsampled from the full dataset. '
+                             'Useful for quick debugging and experiments with low data regimes.')
     parser.add_argument('--old_img_path_prefix', type=str,
                         help='Old path to images that will be replaced by the new prefix in the .npy files.'
                              'It is specifically useful when the .npy files where generated for one directory'
