@@ -171,6 +171,8 @@ if __name__ == "__main__":
         writer.add_scalar("learning_rate/lr_per_epoch", optimizer.param_groups[0]["lr"], epoch_idx)
 
         if epoch_idx % args.save_model_every_n_epochs == 0:
+            # set to evaluation mode to save equivariant models correctly
+            model.eval()
             # save model every n epochs
             epoch_model_path = os.path.join(checkpoint_path, f"model_epoch_{epoch_idx}.pt")
             logging.info(f"Saving the model at epoch {epoch_idx} to {epoch_model_path} ")
