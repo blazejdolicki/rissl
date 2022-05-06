@@ -1,6 +1,6 @@
 import torchvision
 from models.e2_wide_resnet import e2wrn28_10R, e2wrn28_7R
-from models.e2_resnet import E2ResNet, E2BasicBlock
+from models.e2_resnet import E2ResNet, E2BasicBlock, E2Bottleneck
 
 models = {
     "resnet18": torchvision.models.resnet18,
@@ -27,7 +27,10 @@ def get_model(model_type, num_classes, args):
     # densenet_args = {"growth_rate": args.growth_rate,
     #                  "block_config": (3, 3, 3),
     #                  "num_init_features": args.num_init_features}
-    e2_resnet = {"block": E2BasicBlock, "layers": [2, 2, 2, 2]}
+    e2_resnet = {"block": E2BasicBlock, "layers": [2, 2, 2, 2], "fixparams": False,
+                 "f": False, # not equivariant to flips
+                 "r": -1,  # no layer restriction
+                 "conv2triv": True} # use group pooling}
 
     if model_type == "densenet":
         pass
