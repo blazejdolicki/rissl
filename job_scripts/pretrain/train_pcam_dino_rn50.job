@@ -3,7 +3,7 @@
 #SBATCH -p gpu_titanrtx
 #SBATCH --gpus-per-node=titanrtx:4 # use all 4 GPUs in the node
 #SBATCH --job-name=train_pcam_dino_rn50
-#SBATCH -t 3-12:00:00
+#SBATCH -t 20:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 
 NUM_WORKERS=2
@@ -60,7 +60,7 @@ run_train()
     config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
     +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-    config.OPTIMIZER.num_epochs=300"
+    config.OPTIMIZER.num_epochs=50"
 }
 
 slurm_submit()

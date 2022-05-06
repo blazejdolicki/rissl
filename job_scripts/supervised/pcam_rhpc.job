@@ -45,8 +45,8 @@ else
 fi
 
 python train.py --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR --mlflow_dir /home/b.dolicki/mlflow_runs \
-                --num_epochs 100 --batch_size=512 --num_workers=1 --model_type resnext50_32x4d --max_lr 0.1 \
-                --lr_scheduler_type StepLR
+                --num_epochs 10 --batch_size=512 --num_workers=1 --model_type resnet18 --max_lr 0.001 \
+                --lr_scheduler_type StepLR --optimizer adam
 
 echo "finished"
 

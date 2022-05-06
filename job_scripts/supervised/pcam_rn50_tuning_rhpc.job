@@ -18,7 +18,7 @@ mkdir -p $CHECKPOINT_DIR
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam"
 
-use_scratch=false
+use_scratch=true
 
 if [ "$use_scratch" = true ] ; then
 
