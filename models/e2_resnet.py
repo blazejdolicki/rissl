@@ -167,9 +167,7 @@ class E2Bottleneck(nn.EquivariantModule):
         for rep in in_fiber.representations:
             assert first_rep_type == type(rep)
 
-        # FIXME hardcoded representation, should be the same representation as in_fiber
-        in_rep = 'regular'
-        width_fiber = nn.FieldType(in_fiber.gspace, width * [in_fiber.gspace.representations[in_rep]])
+        width_fiber = nn.FieldType(in_fiber.gspace, width * [in_fiber.representations[0]])
         # Both self.conv2 and self.downsample layers downsample the input when stride != 1
 
         self.conv1 = conv1x1(in_fiber, width_fiber, sigma=sigma, F=F, initialize=False)
@@ -177,8 +175,9 @@ class E2Bottleneck(nn.EquivariantModule):
         self.conv2 = conv(width_fiber, width_fiber, stride, groups, dilation, sigma=sigma, F=F, initialize=False)
         self.bn2 = nn.InnerBatchNorm(width_fiber)
 
+        # this might need to be changed to `out_fiber` from `in_fiber` for different value of conv2triv
         exp_out_fiber = nn.FieldType(in_fiber.gspace,
-                                     planes * self.expansion * [in_fiber.gspace.representations[in_rep]])
+                                     planes * self.expansion * [in_fiber.representations[0]])
         self.conv3 = conv1x1(width_fiber, exp_out_fiber, sigma=sigma, F=F, initialize=False)
         self.bn3 = nn.InnerBatchNorm(exp_out_fiber)
         self.relu = nn.ReLU(inplace=True)
