@@ -183,6 +183,16 @@ class E2Bottleneck(nn.EquivariantModule):
         self.downsample = downsample
         self.stride = stride
 
+        # `downsample` in resnet.py is the equivalent of `shortcut` in e2_wide_resnet.py
+        self.downsample = None
+        if stride != 1 or self.in_type != exp_out_fiber:
+            self.downsample = nn.SequentialModule(
+                conv1x1(self.in_type, exp_out_fiber, stride=stride, bias=False, sigma=sigma, F=F, initialize=False),
+                nn.InnerBatchNorm(exp_out_fiber),
+            )
+
+        self.out_type = exp_out_fiber
+
     def forward(self, x: Tensor) -> Tensor:
         identity = x
 
