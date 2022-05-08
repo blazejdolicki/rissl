@@ -160,9 +160,7 @@ class E2Bottleneck(nn.EquivariantModule):
         # for ResNext50_32x4d base_width (width_per_group) is 4 and there are 32 groups
         width = int(planes * (base_width / 64.)) * groups
 
-
         # now we need to get the same field type but with `width` representations (number of channels)
-
         first_rep_type = type(in_fiber.representations[0])
         for rep in in_fiber.representations:
             assert first_rep_type == type(rep)
@@ -172,6 +170,7 @@ class E2Bottleneck(nn.EquivariantModule):
 
         self.conv1 = conv1x1(in_fiber, width_fiber, sigma=sigma, F=F, initialize=False)
         self.bn1 = nn.InnerBatchNorm(width_fiber)
+        self.relu1 = nn.ReLU(width_fiber, inplace=True)
         self.conv2 = conv(width_fiber, width_fiber, stride, groups, dilation, sigma=sigma, F=F, initialize=False)
         self.bn2 = nn.InnerBatchNorm(width_fiber)
 
@@ -180,7 +179,7 @@ class E2Bottleneck(nn.EquivariantModule):
                                      planes * self.expansion * [in_fiber.representations[0]])
         self.conv3 = conv1x1(width_fiber, exp_out_fiber, sigma=sigma, F=F, initialize=False)
         self.bn3 = nn.InnerBatchNorm(exp_out_fiber)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu2 = nn.ReLU(exp_out_fiber, inplace=True)
         self.downsample = downsample
         self.stride = stride
 
@@ -189,11 +188,11 @@ class E2Bottleneck(nn.EquivariantModule):
 
         out = self.conv1(x)
         out = self.bn1(out)
-        out = self.relu(out)
+        out = self.relu1(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.relu(out)
+        out = self.relu1(out)
 
         out = self.conv3(out)
         out = self.bn3(out)
@@ -202,7 +201,7 @@ class E2Bottleneck(nn.EquivariantModule):
             identity = self.downsample(x)
 
         out += identity
-        out = self.relu(out)
+        out = self.relu2(out)
 
         return out
 
