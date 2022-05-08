@@ -136,13 +136,11 @@ class E2Bottleneck(nn.EquivariantModule):
     ) -> None:
         super(E2Bottleneck, self).__init__()
 
-        assert inner_fiber is None
-
         if out_fiber is None:
             out_fiber = in_fiber
 
         self.in_type = in_fiber
-        self.out_type = out_fiber
+
 
         if isinstance(in_fiber.gspace, gspaces.FlipRot2dOnR2):
             rotations = in_fiber.gspace.fibergroup.rotation_order
@@ -417,16 +415,12 @@ class E2ResNet(torch.nn.Module):
 
 
 
-        if out_fiber is None:
-            out_fiber = main_fiber
-        out_type = FIBERS[out_fiber](self.gspace, planes, fixparams=self._fixparams)
         out_f = main_type
 
         # add first block that starts with `self.inplanes` channels and ends with `planes` channels
         # use stride=`stride` for the first block and stride=1 for all the rest (default value)
         first_block = block(in_fiber=self.next_in_type,
                             inner_fiber=inner_class,
-                            out_fiber=out_f,
                             stride=stride,
                             # downsample=downsample,
                             groups=self.groups,
@@ -447,7 +441,6 @@ class E2ResNet(torch.nn.Module):
         for _ in range(1, num_blocks-1):
             next_block = block(in_fiber=self.next_in_type,
                                inner_fiber=inner_class,
-                               out_fiber=out_f,
                                groups=self.groups,
                                base_width=self.base_width,
                                dilation=self.dilation,
@@ -457,10 +450,15 @@ class E2ResNet(torch.nn.Module):
             self.next_in_type = out_f
 
         # add last block
-        out_f = out_type
+        if out_fiber is not None:
+            # i think it should be self.next_in_type.size but not sure
+            out_type = FIBERS[out_fiber](self.gspace, self.next_in_type.size, fixparams=self._fixparams)
+        else:
+            out_type = self.next_in_type
+
         last_block = block(in_fiber=self.next_in_type,
                            inner_fiber=inner_class,
-                           out_fiber=out_f,
+                           out_fiber=out_type,
                            groups=self.groups,
                            base_width=self.base_width,
                            dilation=self.dilation,
