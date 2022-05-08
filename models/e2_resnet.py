@@ -156,8 +156,7 @@ class E2Bottleneck(nn.EquivariantModule):
         else:
             conv = conv5x5
 
-        # I think len(out_fiber) is the number of channels in E2
-        planes = len(out_fiber)
+        planes = len(inner_fiber)
         # for ResNext50_32x4d base_width (width_per_group) is 4 and there are 32 groups
         width = int(planes * (base_width / 64.)) * groups
 
