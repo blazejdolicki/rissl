@@ -169,7 +169,7 @@ class E2Bottleneck(nn.EquivariantModule):
         self.conv1 = conv1x1(in_fiber, width_fiber, sigma=sigma, F=F, initialize=False)
         self.bn1 = nn.InnerBatchNorm(width_fiber)
         self.relu1 = nn.ReLU(width_fiber, inplace=True)
-        self.conv2 = conv(width_fiber, width_fiber, stride, groups, dilation, sigma=sigma, F=F, initialize=False)
+        self.conv2 = conv(width_fiber, width_fiber, stride=stride, dilation=dilation, groups=groups, sigma=sigma, F=F, initialize=False)
         self.bn2 = nn.InnerBatchNorm(width_fiber)
 
         # this might need to be changed to `out_fiber` from `in_fiber` for different value of conv2triv
@@ -367,7 +367,7 @@ class E2ResNet(torch.nn.Module):
 
         linear_input_features = self.mp.out_type.size if not self.conv2triv else self.layer4.out_type.size
         # TODO not sure about the linear input size here
-        self.fc = torch.nn.Linear(linear_input_features * block.expansion, num_classes)
+        self.fc = torch.nn.Linear(linear_input_features, num_classes)
 
         for module in self.modules():
             if isinstance(module, nn.R2Conv):

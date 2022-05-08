@@ -18,13 +18,14 @@ def _get_fco(fco):
     return fco
 
 
-def conv7x7(in_type: nn.FieldType, out_type: nn.FieldType, stride=1, padding=3, dilation=1, bias=False, sigma=None, F=1., initialize=True):
+def conv7x7(in_type: nn.FieldType, out_type: nn.FieldType, stride=1, padding=3, dilation=1, groups=1, bias=False, sigma=None, F=1., initialize=True):
     """7x7 convolution with padding"""
     fco = _get_fco(F)
     return nn.R2Conv(in_type, out_type, 7,
                      stride=stride,
                      padding=padding,
                      dilation=dilation,
+                     groups=groups,
                      bias=bias,
                      sigma=sigma,
                      frequencies_cutoff=fco,
@@ -32,13 +33,14 @@ def conv7x7(in_type: nn.FieldType, out_type: nn.FieldType, stride=1, padding=3, 
                      )
 
 
-def conv5x5(in_type: nn.FieldType, out_type: nn.FieldType, stride=1, padding=2, dilation=1, bias=False, sigma=None, F=1., initialize=True):
+def conv5x5(in_type: nn.FieldType, out_type: nn.FieldType, stride=1, padding=2, dilation=1, groups=1, bias=False, sigma=None, F=1., initialize=True):
     """5x5 convolution with padding"""
     fco = _get_fco(F)
     return nn.R2Conv(in_type, out_type, 5,
                      stride=stride,
                      padding=padding,
                      dilation=dilation,
+                     groups=groups,
                      bias=bias,
                      sigma=sigma,
                      frequencies_cutoff=fco,
@@ -46,13 +48,14 @@ def conv5x5(in_type: nn.FieldType, out_type: nn.FieldType, stride=1, padding=2, 
                      )
 
 
-def conv3x3(in_type: nn.FieldType, out_type: nn.FieldType, padding=1, stride=1, dilation=1, bias=False, sigma=None, F=1., initialize=True):
+def conv3x3(in_type: nn.FieldType, out_type: nn.FieldType, padding=1, stride=1, dilation=1, groups=1, bias=False, sigma=None, F=1., initialize=True):
     """3x3 convolution with padding"""
     fco = _get_fco(F)
     return nn.R2Conv(in_type, out_type, 3,
                      stride=stride,
                      padding=padding,
                      dilation=dilation,
+                     groups=groups,
                      bias=bias,
                      sigma=sigma,
                      frequencies_cutoff=fco,
