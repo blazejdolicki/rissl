@@ -430,12 +430,8 @@ class E2ResNet(torch.nn.Module):
                             F=self._F)
         layers.append(first_block)
 
-        # E2BasicBlock.expansion = 1 and E2Bottleneck.expansion = 4
-        # add intermediate blocks
-        self.inplanes = planes * block.expansion
-
         # create new field type with `planes * block.expansion` channels
-        self.next_in_type = FIBERS[main_fiber](self.gspace, self.inplanes, fixparams=self._fixparams)
+        self.next_in_type = first_block.out_type
         # TODO: not sure if the number of channels here checks out given `expansion`
         out_f = self.next_in_type
         for _ in range(1, num_blocks-1):
