@@ -173,8 +173,8 @@ class E2Bottleneck(nn.EquivariantModule):
         self.bn2 = nn.InnerBatchNorm(width_fiber)
 
         # this might need to be changed to `out_fiber` from `in_fiber` for different value of conv2triv
-        exp_out_fiber = nn.FieldType(in_fiber.gspace,
-                                     planes * self.expansion * [in_fiber.representations[0]])
+        exp_out_fiber = nn.FieldType(in_fiber.gspace, planes * self.expansion * [in_fiber.representations[0]])
+
         self.conv3 = conv1x1(width_fiber, exp_out_fiber, sigma=sigma, F=F, initialize=False)
         self.bn3 = nn.InnerBatchNorm(exp_out_fiber)
         self.relu2 = nn.ReLU(exp_out_fiber, inplace=True)
@@ -266,8 +266,8 @@ class E2ResNet(torch.nn.Module):
 
         # Number of output channels of the first convolution
         self.inplanes = 64
-        print(self.inplanes)
         self.dilation = 1
+
         if replace_stride_with_dilation is None:
             # each element in the tuple indicates if we should replace
             # the 2x2 stride with a dilated convolution instead
@@ -413,14 +413,13 @@ class E2ResNet(torch.nn.Module):
         main_type = FIBERS[main_fiber](self.gspace, planes, fixparams=self._fixparams)
         inner_class = FIBERS[inner_fiber](self.gspace, planes, fixparams=self._fixparams)
 
-
-
         out_f = main_type
 
         # add first block that starts with `self.inplanes` channels and ends with `planes` channels
         # use stride=`stride` for the first block and stride=1 for all the rest (default value)
         first_block = block(in_fiber=self.next_in_type,
                             inner_fiber=inner_class,
+                            out_fiber=out_f,
                             stride=stride,
                             # downsample=downsample,
                             groups=self.groups,
@@ -437,6 +436,7 @@ class E2ResNet(torch.nn.Module):
         for _ in range(1, num_blocks-1):
             next_block = block(in_fiber=self.next_in_type,
                                inner_fiber=inner_class,
+                               out_fiber=out_f,
                                groups=self.groups,
                                base_width=self.base_width,
                                dilation=self.dilation,
