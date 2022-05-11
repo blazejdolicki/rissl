@@ -1,6 +1,6 @@
 import torchvision
 from models.e2_wide_resnet import e2wrn28_10R, e2wrn28_7R
-from models.e2_resnet import E2ResNet, E2BasicBlock, E2Bottleneck
+from models import e2_resnet
 
 models = {
     "resnet18": torchvision.models.resnet18,
@@ -14,29 +14,36 @@ models = {
     "wide_resnet101_2": torchvision.models.wide_resnet101_2,
     "densenet121": torchvision.models.densenet121,
     "densenet": torchvision.models.DenseNet,
-    # my e2 implementations
-    "e2_resnet18": E2ResNet,
-    # e2cnn_exp implementations
+    # my equivariant implementations
+    "e2_resnet18": e2_resnet.e2_resnet18,
+    "e2_resnext50": e2_resnet.e2_resnext50,
+    # e2cnn_exp equivariant implementations
     "e2_wide_resnet28_10R": e2wrn28_10R,
     "e2_wide_resnet28_7R": e2wrn28_7R
 }
 
 
+
+
 def get_model(model_type, num_classes, args):
     model_args = {"num_classes": num_classes}
-    # densenet_args = {"growth_rate": args.growth_rate,
-    #                  "block_config": (3, 3, 3),
-    #                  "num_init_features": args.num_init_features}
-    e2_resnet = {"block": E2BasicBlock, "layers": [2, 2, 2, 2], "fixparams": False,
-                 "f": False, # not equivariant to flips
-                 "r": -1,  # no layer restriction
-                 "conv2triv": True} # use group pooling}
 
     if model_type == "densenet":
-        pass
-        # model_args = {**model_args, **densenet_args}
-    if model_type == "e2_resnet18":
-        model_args = {**model_args, **e2_resnet}
-    print("resnet18")
+        densenet_args = {"growth_rate": args.growth_rate,
+                         "block_config": (3, 3, 3),
+                         "num_init_features": args.num_init_features}
+        model_args = {**model_args, **densenet_args}
+    if is_equivariant(model_type):
+        equivariant_args = {"N": args.N,
+                            "F": args.F,
+                            "sigma": args.sigma,
+                            "restrict": args.restrict,
+                            "flip": args.flip,
+                            "fixparams": args.fixparams,
+                            "deltaorth": args.deltaorth}
+        model_args = {**model_args, **equivariant_args}
+
     return models[model_type](**model_args)
 
+def is_equivariant(model_type):
+    return "e2" in model_type

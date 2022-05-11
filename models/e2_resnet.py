@@ -225,8 +225,8 @@ class E2ResNet(torch.nn.Module):
         layers: List[int],
         num_classes: int = 1000,
         N: int = 8,
-        r: int = 1,
-        f: bool = True,
+        restrict: int = 1,
+        flip: bool = True,
         main_fiber: str = "regular",
         inner_fiber: str = "regular",
         F: float = 1.,
@@ -246,7 +246,7 @@ class E2ResNet(torch.nn.Module):
         :param layers: Number of blocks in each layer
         :param num_classes:
         :param N:
-        :param r:
+        :param restrict:
         :param f: If the model is flip equivariant.
         :param main_fiber:
         :param inner_fiber:
@@ -278,6 +278,7 @@ class E2ResNet(torch.nn.Module):
         self.groups = groups
         self.base_width = width_per_group
 
+        print(f"F {F} sigma {sigma}")
         # Equivariant part of initialization of ResNet
         self._fixparams = fixparams
         self.conv2triv = conv2triv
@@ -286,13 +287,13 @@ class E2ResNet(torch.nn.Module):
         self._N = N
 
         # if the model is [F]lip equivariant
-        self._f = f
+        self._f = flip
 
         # level of [R]estriction:
         #   r < 0 : never do restriction, i.e. initial group (either D8 or C8) preserved for the whole network
         #   r = 0 : do restriction before first layer, i.e. initial group doesn't have rotation equivariance (C1 or D1)
         #   r > 0 : restrict after every block, i.e. start with 8 rotations, then restrict to 4 and finally 1
-        self._r = r
+        self._r = restrict
 
         self._F = F
         self._sigma = sigma
@@ -525,3 +526,12 @@ class E2ResNet(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
 
+# Note: More architectures can be added here as desired, following resnet.py
+
+def e2_resnet18(**model_args):
+    return E2ResNet(block=E2BasicBlock, layers=[2, 2, 2, 2], **model_args)
+
+def e2_resnext50(**model_args):
+    model_args['groups'] = 32
+    model_args['width_per_group'] = 4
+    return E2ResNet(block=E2Bottleneck, layers=[3, 4, 6, 3], **model_args)
