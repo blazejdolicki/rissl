@@ -446,11 +446,9 @@ class E2ResNet(torch.nn.Module):
             self.next_in_type = out_f
 
         # add last block
-        if out_fiber is not None:
-            # i think it should be self.next_in_type.size but not sure
-            out_type = FIBERS[out_fiber](self.gspace, self.next_in_type.size, fixparams=self._fixparams)
-        else:
-            out_type = self.next_in_type
+        if out_fiber is None:
+            out_fiber = main_fiber
+        out_type = FIBERS[out_fiber](self.gspace, planes, fixparams=self._fixparams)
 
         last_block = block(in_fiber=self.next_in_type,
                            inner_fiber=inner_class,
