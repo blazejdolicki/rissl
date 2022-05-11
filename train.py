@@ -27,19 +27,19 @@ if __name__ == "__main__":
     # fix seed
     utils.fix_seed(args.seed)
 
-    train_transform, test_transform = get_transforms(args)
-    args.transform = utils.add_transform_to_args(train_transform, test_transform)
+    train_transform, valid_transform = get_transforms(args)
+    args.transform = utils.add_transform_to_args(train_transform, valid_transform)
 
     utils.setup_mlflow(args)
 
 
 
-    train_dataset, test_dataset, num_classes = get_dataset(train_transform, test_transform, args)
+    train_dataset, valid_dataset, num_classes = get_dataset(train_transform, valid_transform, args)
 
-    logging.info(f"Train size {len(train_dataset)}, test size {len(test_dataset)}")
+    logging.info(f"Train size {len(train_dataset)}, valid size {len(valid_dataset)}")
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
     logging.info(f"Device: {device}")
@@ -94,11 +94,11 @@ if __name__ == "__main__":
     train_accs = []
 
     if not args.no_validation:
-        best_test_loss = np.inf
-        best_test_acc = 0.0
-        best_test_epoch = 0
-        test_losses = []
-        test_accs = []
+        best_valid_loss = np.inf
+        best_valid_acc = 0.0
+        best_valid_epoch = 0
+        valid_losses = []
+        valid_accs = []
 
     for epoch_idx in tqdm(range(args.num_epochs)):  # loop over the dataset multiple times
         logging.info(f"Epoch {epoch_idx}")
@@ -184,12 +184,12 @@ if __name__ == "__main__":
         # evaluate the model on validation set
         if not args.no_validation:
             logging.info(f"Starting validation")
-            test_epoch_loss = 0.0
-            test_num_correct = 0.0
-            actual_test_size = 0.0
+            valid_epoch_loss = 0.0
+            valid_num_correct = 0.0
+            actual_valid_size = 0.0
             # since we're not training, we don't need to calculate the gradients for our outputs
             with torch.no_grad():
-                for batch in test_loader:
+                for batch in valid_loader:
                     model.eval()
 
                     inputs, labels = batch
@@ -202,56 +202,56 @@ if __name__ == "__main__":
                     outputs = model(inputs)
                     batch_loss = criterion(outputs, labels)
 
-                    test_epoch_loss += batch_size * batch_loss.item()
-                    actual_test_size += batch_size
+                    valid_epoch_loss += batch_size * batch_loss.item()
+                    actual_valid_size += batch_size
                     preds = outputs.argmax(dim=1)
-                    test_num_correct += (preds == labels).sum().item()
+                    valid_num_correct += (preds == labels).sum().item()
 
-            test_epoch_loss = test_epoch_loss / actual_test_size
-            test_epoch_acc = 100 * test_num_correct / actual_test_size
+            valid_epoch_loss = valid_epoch_loss / actual_valid_size
+            valid_epoch_acc = 100 * valid_num_correct / actual_valid_size
 
-            writer.add_scalar("test/epoch_loss", test_epoch_loss, epoch_idx)
-            writer.add_scalar("test/epoch_acc", test_epoch_acc, epoch_idx)
+            writer.add_scalar("valid/epoch_loss", valid_epoch_loss, epoch_idx)
+            writer.add_scalar("valid/epoch_acc", valid_epoch_acc, epoch_idx)
 
-            test_losses.append(test_epoch_loss)
-            test_accs.append(test_epoch_acc)
+            valid_losses.append(valid_epoch_loss)
+            valid_accs.append(valid_epoch_acc)
 
             logging.info(f"Train loss: \t{train_epoch_loss}, train acc: \t{train_epoch_acc}")
-            logging.info(f"Test loss: \t{test_epoch_loss}, test acc: \t{test_epoch_acc}")
+            logging.info(f"valid loss: \t{valid_epoch_loss}, valid acc: \t{valid_epoch_acc}")
 
             # set new best loss, acc and epoch and save model
-            if test_epoch_acc > best_test_acc:
-                best_test_loss = test_epoch_loss
-                best_test_acc = test_epoch_acc
-                best_test_epoch = epoch_idx
+            if valid_epoch_acc > best_valid_acc:
+                best_valid_loss = valid_epoch_loss
+                best_valid_acc = valid_epoch_acc
+                best_valid_epoch = epoch_idx
 
                 # save parameters of the best model for inference
                 logging.info(f"Saving the best model to {best_model_path}")
                 torch.save(model.state_dict(), best_model_path)
 
             # if using early stopping, end when loss didn't improve for n epochs
-            elif args.early_stopping and epoch_idx - best_test_epoch >= args.patience:
+            elif args.early_stopping and epoch_idx - best_valid_epoch >= args.patience:
                 logging.info(
-                    f"Early stopping at epoch {epoch_idx} - test loss haven't improved for {args.patience} epochs")
+                    f"Early stopping at epoch {epoch_idx} - valid loss haven't improved for {args.patience} epochs")
                 break
 
             logging.info("Finished validation")
 
     if not args.no_validation:
-        mlflow.log_metric("best_test_loss", best_test_loss)
-        mlflow.log_metric("best_test_acc", best_test_acc)
-        mlflow.log_metric("best_test_epoch", best_test_epoch)
+        mlflow.log_metric("best_valid_loss", best_valid_loss)
+        mlflow.log_metric("best_valid_acc", best_valid_acc)
+        mlflow.log_metric("best_valid_epoch", best_valid_epoch)
 
-        mlflow.log_metric("final_test_loss", test_epoch_loss)
-        mlflow.log_metric("final_test_acc", test_epoch_acc)
+        mlflow.log_metric("final_valid_loss", valid_epoch_loss)
+        mlflow.log_metric("final_valid_acc", valid_epoch_acc)
 
     # save metrics summary
     metrics_summary_path = os.path.join(args.log_dir, "metrics_summary.json")
-    metrics_summmary = {"best_test_loss": best_test_loss,
-                        "best_test_acc": best_test_acc,
-                        "best_test_epoch": best_test_epoch,
-                        "final_test_loss": test_epoch_loss,
-                        "final_test_acc": test_epoch_acc
+    metrics_summmary = {"best_valid_loss": best_valid_loss,
+                        "best_valid_acc": best_valid_acc,
+                        "best_valid_epoch": best_valid_epoch,
+                        "final_valid_loss": valid_epoch_loss,
+                        "final_valid_acc": valid_epoch_acc
                         }
 
     with open(metrics_summary_path, 'w') as file:
@@ -261,8 +261,8 @@ if __name__ == "__main__":
     metrics_path = os.path.join(args.log_dir, "metrics_over_epochs.json")
     metrics = {"train": {"losses": train_losses,
                          "accs": train_accs},
-               "test": {"losses": test_losses,
-                        "accs": test_accs}
+               "valid": {"losses": valid_losses,
+                        "accs": valid_accs}
                }
 
     with open(metrics_path, 'w') as file:
