@@ -2,6 +2,8 @@
 Repository containing code for my MSc thesis. Keep in mind that the commands mentioned below apply for Linux and will often not work on other operating systems.
 ## Installation
 TODO
+
+Clone my fork of VISSL: https://github.com/blazejdolicki/vissl
 ## Datasets
 Descriptions of the datasets are available in the paper. Most of datasets are compressed in some format and you have to unpack them.
 For `.zip` files  (given the current dir contains `<file>`:
