@@ -527,9 +527,13 @@ class E2ResNet(torch.nn.Module):
         return self._forward_impl(x)
 
 # Note: More architectures can be added here as desired, following resnet.py
-
 def e2_resnet18(**model_args):
     return E2ResNet(block=E2BasicBlock, layers=[2, 2, 2, 2], **model_args)
+
+
+def e2_resnet50(**model_args):
+    return E2ResNet(block=E2Bottleneck, layers=[3, 4, 6, 3], **model_args)
+
 
 def e2_resnext50(**model_args):
     model_args['groups'] = 32

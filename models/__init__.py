@@ -16,13 +16,12 @@ models = {
     "densenet": torchvision.models.DenseNet,
     # my equivariant implementations
     "e2_resnet18": e2_resnet.e2_resnet18,
+    "e2_resnet50": e2_resnet.e2_resnet50,
     "e2_resnext50": e2_resnet.e2_resnext50,
     # e2cnn_exp equivariant implementations
     "e2_wide_resnet28_10R": e2wrn28_10R,
     "e2_wide_resnet28_7R": e2wrn28_7R
 }
-
-
 
 
 def get_model(model_type, num_classes, args):
