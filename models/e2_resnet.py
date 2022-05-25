@@ -366,6 +366,7 @@ class E2ResNet(torch.nn.Module):
         if not self.conv2triv:
             self.mp = nn.GroupPooling(self.layer4.out_type)
 
+        self.avgpool = torch.nn.AdaptiveAvgPool2d((1,1))
         linear_input_features = self.mp.out_type.size if not self.conv2triv else self.layer4.out_type.size
         # TODO not sure about the linear input size here
         self.fc = torch.nn.Linear(linear_input_features, num_classes)
@@ -510,14 +511,9 @@ class E2ResNet(torch.nn.Module):
         x = self.layer3(self.restrict2(x))
         x = self.layer4(x)
 
-        # TODO group pooling?, finish the stuff below
         if not self.conv2triv:
             x = self.mp(x)
-
-        x = x.tensor
-
-        b, c, w, h = x.shape
-        x = F.avg_pool2d(x, (w, h))
+        x = self.avgpool(x.tensor)
         x = torch.flatten(x, 1)
         x = self.fc(x)
 
