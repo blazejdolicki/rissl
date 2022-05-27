@@ -4,7 +4,7 @@
 #SBATCH --partition=batch
 #SBATCH --job-name=pcam
 #SBATCH --gpus-per-node=1
-#SBATCH --time=2-00:00:00
+#SBATCH --time=7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 

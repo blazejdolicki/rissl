@@ -44,7 +44,7 @@ else
   DATA_DIR=$DATA_HOME_DIR
 fi
 
-python hp_tuning/pcam_rn50_tuning.py --log_dir $CHECKPOINT_DIR --exp_name pcam_rn50_tuning --data_dir $DATA_DIR
+python hp_tuning/pcam_rn50_tuning.py --log_dir $CHECKPOINT_DIR --exp_name pcam_e2_rn50_tuning --data_dir $DATA_DIR
 
 echo "finished"
 
