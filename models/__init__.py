@@ -1,6 +1,12 @@
 import torchvision
-from models.e2_wide_resnet import e2wrn28_10R, e2wrn28_7R
-from models import e2_resnet
+
+# temporary hack to import rissl
+# TODO: Improve it once the final directory structure is determined
+import sys
+sys.path.insert(0, "/home/b.dolicki/thesis/")
+
+from rissl.models.e2_wide_resnet import e2wrn28_10R, e2wrn28_7R
+from rissl.models import e2_resnet
 
 models = {
     "resnet18": torchvision.models.resnet18,
