@@ -278,7 +278,6 @@ class E2ResNet(torch.nn.Module):
         self.groups = groups
         self.base_width = width_per_group
 
-        print(f"F {F} sigma {sigma}")
         # Equivariant part of initialization of ResNet
         self._fixparams = fixparams
         self.conv2triv = conv2triv
