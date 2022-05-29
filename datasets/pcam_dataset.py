@@ -3,6 +3,8 @@ from torch.utils.data import Dataset
 import os
 import h5py
 from PIL import Image
+import random
+
 
 class PCamDataset(Dataset):
     """
@@ -13,18 +15,23 @@ class PCamDataset(Dataset):
     Tumour tissue in the outer region does not influence the label.
 
     Source: https://github.com/basveeling/pcam
+
+    :param sample: Allows to take a sample of the dataset.
+                   If `sample` is a fraction between 0 and 1, we take a proportional fraction of the full dataset.
+                   If `sample` is a whole number, we take a number of elements from the full dataset equal to `sample`.
     """
 
-    def __init__(self, root_dir, split, transform=None):
+    def __init__(self, root_dir, split, transform=None, sample=None):
+        self.sample = sample
+
         imgs_path = os.path.join(os.path.join(root_dir, f'camelyonpatch_level_2_split_{split}_x.h5'))
         self.imgs = h5py.File(imgs_path, 'r')["x"]
 
         labels_path = os.path.join(os.path.join(root_dir, f'camelyonpatch_level_2_split_{split}_y.h5'))
         self.labels = h5py.File(labels_path, 'r')["y"]
 
-        # subsambple - TODO remove after testing
-        self.imgs = self.imgs
-        self.labels = self.labels
+        if sample is not None:
+            self.get_sample()
 
         self.transform = transform
 
@@ -41,3 +48,13 @@ class PCamDataset(Dataset):
             img = self.transform(img)
 
         return img, label
+
+    def get_sample(self):
+        dataset_size = len(self)
+        if self.sample < 1:
+            self.sample = self.sample * dataset_size
+        # h5py requires the indices to be sorted in increasing order
+        sample_idxs = sorted(random.sample(range(dataset_size), int(self.sample)))
+
+        self.imgs = self.imgs[sample_idxs]
+        self.labels = self.labels[sample_idxs]

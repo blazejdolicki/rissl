@@ -65,6 +65,9 @@ def read_args(parser):
     parser.add_argument('--dataset', type=str, help='Dataset used for training and evaluation')
     parser.add_argument('--data_dir', type=str, default='/home/bdolicki/thesis/ssl-histo/data',
                         help='Directory of the data')
+    parser.add_argument('--sample', type=float, default=None,
+                        help='A fraction or number of examples that will be subsampled from the full dataset. '
+                             'Useful for quick debugging and experiments with low data regimes.')
     parser.add_argument('--old_img_path_prefix', type=str,
                         help='Old path to images that will be replaced by the new prefix in the .npy files.'
                              'It is specifically useful when the .npy files where generated for one directory'
@@ -127,11 +130,15 @@ def read_args(parser):
         return float(value)
 
     parser.add_argument('--N', type=int, default=4, help='Size of cyclic group for GCNN and maximum frequency for HNET')
-    parser.add_argument('--F', type=none_or_float, default=None,
+    parser.add_argument('--F', type=float, default=1.0,
                         help='Frequency cut-off: maximum frequency at radius "r" is "F*r"')
-    parser.add_argument('--sigma', type=none_or_float, default=None,
+    parser.add_argument('--sigma', type=float, default=0.45,
                         help='Width of the rings building the bases (std of the gaussian window)')
     parser.add_argument('--restrict', type=int, default=-1, help='Layer where to restrict SFCNN from E(2) to SE(2)')
+    # FIXME not sure if sgsize argument is important here, so removed it for now
+    parser.add_argument('--flip', dest="flip", action="store_true",
+                        help='Use also reflection equivariance in the EXP model')
+    parser.set_defaults(flip=False)
     parser.add_argument('--fixparams', dest="fixparams", action="store_true",
                         help='Keep the number of parameters of the model fixed by adjusting its topology')
     parser.set_defaults(fixparams=False)

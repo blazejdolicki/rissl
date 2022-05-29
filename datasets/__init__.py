@@ -61,6 +61,9 @@ def get_transforms(args):
 
 
 def get_dataset(train_transform, test_transform, args):
+    if args.sample is not None and args.dataset != "pcam":
+        raise NotImplementedError("Currently sampling is only implement for PCam")
+
     if args.dataset == "breakhis_fold":
         breakhis_dir = os.path.join(args.data_dir, "breakhis")
         train_dataset = BreakhisFoldDataset(breakhis_dir, "train", args.fold, args.train_mag, train_transform)
@@ -72,7 +75,7 @@ def get_dataset(train_transform, test_transform, args):
                                        test_transform)
     elif args.dataset == "pcam":
         num_classes = 2
-        train_dataset = PCamDataset(root_dir=args.data_dir, split="train", transform=train_transform)
-        test_dataset = PCamDataset(root_dir=args.data_dir, split="valid", transform=test_transform)
+        train_dataset = PCamDataset(root_dir=args.data_dir, split="train", transform=train_transform, sample=args.sample)
+        test_dataset = PCamDataset(root_dir=args.data_dir, split="valid", transform=test_transform, sample=args.sample)
 
     return train_dataset, test_dataset, num_classes

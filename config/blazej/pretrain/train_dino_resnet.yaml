@@ -81,9 +81,9 @@ config:
   LOSS:
     name: dino_loss
     dino_loss:
-      momentum: 0.996
-      teacher_temp_warmup_iters: 37530 # 30 epochs - Paper uses 50 epochs for RN50
-      teacher_temp_min: 0.04
+      momentum: 0.9995 # higher value due to smaller batch
+      teacher_temp_warmup_iters: 20000 # try 20 epochs - Paper uses 50 epochs for RN50
+      teacher_temp_min: 0.02
       teacher_temp_max: 0.07
       ema_center: 0.9
       normalize_last_layer: true
@@ -103,10 +103,10 @@ config:
               end_value: 0.3 # determined according to formula 0.3*(batch_size/256)
             - name: cosine
               start_value: 0.3 # determined according to formula 0.3*(batch_size/256)
-              end_value: 0.0048
+              end_value: 0.28
           update_interval: epoch
           interval_scaling: [rescaled, fixed]
-          lengths: [0.0333, 0.9667]
+          lengths: [0.4, 0.6]
         lr:
           name: composite
           schedulers:
@@ -115,10 +115,10 @@ config:
               end_value: 0.3 # determined according to formula 0.0005*(batch_size/256)
             - name: cosine
               start_value: 0.3 # determined according to formula 0.0005*(batch_size/256)
-              end_value: 0.0048
+              end_value: 0.28
           update_interval: epoch
           interval_scaling: [rescaled, fixed]
-          lengths: [0.0333, 0.9667]
+          lengths: [0.4, 0.6]
         weight_decay:
           name: cosine
           start_value: 0.000001
