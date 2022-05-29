@@ -24,10 +24,10 @@ class PCamDataset(Dataset):
     def __init__(self, root_dir, split, transform=None, sample=None):
         self.sample = sample
 
-        imgs_path = os.path.join(os.path.join(root_dir, f'camelyonpatch_level_2_split_{split}_x.h5'))
+        imgs_path = os.path.join(root_dir, f'camelyonpatch_level_2_split_{split}_x.h5')
         self.imgs = h5py.File(imgs_path, 'r')["x"]
 
-        labels_path = os.path.join(os.path.join(root_dir, f'camelyonpatch_level_2_split_{split}_y.h5'))
+        labels_path = os.path.join(root_dir, f'camelyonpatch_level_2_split_{split}_y.h5')
         self.labels = h5py.File(labels_path, 'r')["y"]
 
         if sample is not None:
