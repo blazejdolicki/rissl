@@ -12,7 +12,7 @@ LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 source activate e2cnn_cuda11
-cd $HOME/thesis/ssl-histo/
+cd $HOME/thesis/rissl/
 mkdir -p $CHECKPOINT_DIR
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam"
@@ -44,11 +44,12 @@ else
   DATA_DIR=$DATA_HOME_DIR
 fi
 
+# TODO Change to more epochs
 python train.py --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR --mlflow_dir /home/b.dolicki/mlflow_runs \
-                --num_epochs 10 --batch_size=512 --num_workers=1 --model_type resnet18 --max_lr 0.001 \
+                --num_epochs 1 --batch_size=512 --num_workers=1 --model_type resnet18 --max_lr 0.001 \
                 --lr_scheduler_type StepLR --optimizer adam
 
 echo "finished"
 
 # move slurm output from default location to logs after the job is finished
-mv $HOME/thesis/ssl-histo/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+mv $HOME/thesis/rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

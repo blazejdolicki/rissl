@@ -7,12 +7,13 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
+#SBATCH --exclude=eudoxus
 
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 source activate e2cnn_cuda11
-cd $HOME/thesis/ssl-histo/
+cd $HOME/thesis/rissl/
 mkdir -p $CHECKPOINT_DIR
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam"
