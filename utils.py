@@ -8,6 +8,7 @@ import mlflow
 import copy
 
 from models import models
+from collect_env import collect_env_info
 
 
 def setup_logging(output_dir):
@@ -16,7 +17,6 @@ def setup_logging(output_dir):
     Suitable for single GPU only.
     """
     # get the filename if we want to log to the file as well
-    os.makedirs(output_dir, exist_ok=True)
     log_filename = f"{output_dir}/log.txt"
     logging.basicConfig(
         level=logging.DEBUG,
@@ -38,6 +38,12 @@ def setup_mlflow(args):
     mlflow_args = copy.deepcopy(args)
     mlflow_args.transform = "See args.json"
     mlflow.log_params(vars(mlflow_args))
+
+
+def save_env_info(logdir):
+    env_info_path = os.path.join(logdir, "env_info.txt")
+    with open(env_info_path, 'w') as f:
+        f.write(collect_env_info())
 
 
 def fix_seed(seed):
@@ -217,6 +223,5 @@ def add_transform_to_args(train_transform, test_transform):
     test_transform_list_str = [str(t) for t in test_transform.transforms]
     transform["test"] = test_transform_list_str
     return transform
-
 
 

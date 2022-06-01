@@ -16,10 +16,18 @@ import time
 from datasets import get_transforms, get_dataset
 import utils
 from models import get_model
+from collect_env import collect_env_info
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
     args = utils.parse_args(parser)
+
+    # create logging directory
+    os.makedirs(args.log_dir, exist_ok=True)
+
+    # collect information about system and hardware
+    utils.save_env_info(args.log_dir)
 
     # set up logging to file
     utils.setup_logging(args.log_dir)
@@ -273,4 +281,8 @@ if __name__ == "__main__":
     torch.save(model.state_dict(), final_model_path)
 
     writer.close()
+
+
+    gpu_mem_gb = round(torch.cuda.max_memory_allocated()/10**9, 2)
+    logging.info(f'Max GPU memory allocated (in GBs): {gpu_mem_gb}')
     logging.info('Finished training')
