@@ -148,6 +148,10 @@ def read_args(parser):
     parser.add_argument('--fixparams', dest="fixparams", action="store_true",
                         help='Keep the number of parameters of the model fixed by adjusting its topology')
     parser.set_defaults(fixparams=False)
+    parser.add_argument('--conv2triv', action="store_true",
+                        help='Convert to trivial representation in last layer to obtain invariant outputs. If False,'
+                             'use GroupPooling instead.')
+    parser.set_defaults(conv2triv=False)
     parser.add_argument('--deltaorth', dest="deltaorth", action="store_true",
                         help='Use delta orthogonal initialization in conv layers')
     # DenseNet
