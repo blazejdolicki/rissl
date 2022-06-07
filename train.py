@@ -55,6 +55,8 @@ if __name__ == "__main__":
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
     model = get_model(args.model_type, num_classes, args).to(device)
+    print("Model:")
+    print(model)
 
     num_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
     # separate thousands with commas
