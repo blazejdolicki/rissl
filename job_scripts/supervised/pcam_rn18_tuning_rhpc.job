@@ -2,7 +2,7 @@
 
 #SBATCH -N 1 # number of nodes
 #SBATCH --partition=batch
-#SBATCH --job-name=pcam_rn50_tuning
+#SBATCH --job-name=pcam_rn18_tuning
 #SBATCH --gpus-per-node=1
 #SBATCH --time=7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
@@ -45,7 +45,7 @@ else
   DATA_DIR=$DATA_HOME_DIR
 fi
 
-python hp_tuning/pcam_rn50_tuning.py --log_dir $CHECKPOINT_DIR --exp_name pcam_e2_rn50_tuning --data_dir $DATA_DIR
+python hp_tuning/pcam_tuning.py --log_dir $CHECKPOINT_DIR --exp_name pcam_e2_rn50_tuning --data_dir $DATA_DIR
 
 echo "finished"
 
