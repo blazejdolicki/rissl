@@ -38,12 +38,12 @@ for i, run in enumerate(runs):
                     "--job_id", job_id,
                     "--exp_name", args.exp_name,
                     "--mlflow_dir", "/home/b.dolicki/mlflow_runs",
-                    "--model_type", "resnet18",
+                    "--model_type", "e2_resnet18",
                     "--batch_size", str(512),
                     "--num_workers", str(1),
                     "--num_epochs", str(50), # TODO Change to 50
                     "--max_lr", str(run[0]),
                     "--weight_decay", str(run[1]),
                     "--lr_scheduler_type", "StepLR",
-                    "--optimizer", str(run[3])
+                    "--optimizer", str(run[2])
                     ])
