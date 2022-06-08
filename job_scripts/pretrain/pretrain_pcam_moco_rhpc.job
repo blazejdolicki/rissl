@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=pretrain/moco/moco_1node_resnet.yaml
+CONFIG_PATH=pretrain/moco/moco.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
 

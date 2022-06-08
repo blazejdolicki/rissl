@@ -1,8 +1,4 @@
 import yaml
-import pprint
-import argparse
-from collections import defaultdict
-
 
 def list2str(param):
     """
@@ -41,7 +37,6 @@ def convert_config(train_config, default_linear_config):
     linear_config["config"]["DATA"]["TEST"]["TRANSFORMS"] = default_linear_config["config"]["DATA"]["TEST"]["TRANSFORMS"]
 
     # use the same placeholder values for test set, it's overwritten in the script anyway
-
     linear_config["config"]["DATA"]["TEST"]["DATA_SOURCES"] = default_linear_config["config"]["DATA"]["TRAIN"]["DATA_SOURCES"]
     linear_config["config"]["DATA"]["TEST"]["DATASET_NAMES"] = default_linear_config["config"]["DATA"]["TRAIN"]["DATASET_NAMES"]
     linear_config["config"]["DATA"]["TEST"]["LABEL_TYPE"] = train_config["config"]["DATA"]["TRAIN"]["LABEL_TYPE"]
