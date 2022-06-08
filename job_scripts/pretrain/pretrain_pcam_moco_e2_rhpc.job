@@ -2,8 +2,8 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=pretrain_pcam_moco
-#SBATCH -t 3:00:00
+#SBATCH --job-name=pretrain_pcam_moco_e2
+#SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus

@@ -3,7 +3,7 @@
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
 #SBATCH --job-name=pretrain_pcam_moco
-#SBATCH -t 3:00:00
+#SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
@@ -60,7 +60,7 @@ python3 tools/run_distributed_engines.py \
     config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
     +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-    config.OPTIMIZER.num_epochs=100 # TODO increase number of epochs
+    config.OPTIMIZER.num_epochs=200 # TODO increase number of epochs
 
 # move slurm output from default location to logs after the job is finished
 mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
