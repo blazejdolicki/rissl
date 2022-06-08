@@ -54,11 +54,21 @@ def get_transforms(args):
     train_transform_list = data_transforms[args.dataset]["train"]
     test_transform_list = data_transforms[args.dataset]["test"]
 
+    # remove rotation transformations
+    if args.no_rotation_transforms:
+        logging.info("Not using rotation transforms")
+        remove_rotation_transforms(train_transform_list)
+
     train_transform = transforms.Compose(train_transform_list)
     test_transform = transforms.Compose(test_transform_list)
 
     return train_transform, test_transform
 
+
+def remove_rotation_transforms(transform_list):
+    for t in transform_list:
+        if isinstance(t, DiscreteRotation):
+            transform_list.remove(t)
 
 def get_dataset(train_transform, test_transform, args):
     if args.sample is not None and args.dataset != "pcam":

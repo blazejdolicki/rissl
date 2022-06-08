@@ -123,6 +123,8 @@ def read_args(parser):
     parser.add_argument('--job_id', type=str, help="SLURM job id")
     parser.add_argument('--profile', action="store_true",
                         help="Use profiling to track CPU and GPU performance and memory")
+    parser.add_argument('--no_rotation_transforms', action="store_true",
+                        help="If this argument is specified, don't use rotations as image transformations.")
     # Distributed training
     parser.add_argument('--num_nodes', default=1, type=int,
                         help="Number of nodes used for training")
@@ -148,10 +150,6 @@ def read_args(parser):
     parser.add_argument('--fixparams', dest="fixparams", action="store_true",
                         help='Keep the number of parameters of the model fixed by adjusting its topology')
     parser.set_defaults(fixparams=False)
-    parser.add_argument('--conv2triv', action="store_true",
-                        help='Convert to trivial representation in last layer to obtain invariant outputs. If False,'
-                             'use GroupPooling instead.')
-    parser.set_defaults(conv2triv=False)
     parser.add_argument('--deltaorth', dest="deltaorth", action="store_true",
                         help='Use delta orthogonal initialization in conv layers')
     # DenseNet

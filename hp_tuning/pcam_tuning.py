@@ -9,7 +9,9 @@ parser.add_argument("--log_dir", type=str, default="logs",
 parser.add_argument('--exp_name', type=str, default="hp_tuning",
                     help='MLFlow experiment folder where the results will be logged')
 parser.add_argument('--data_dir', type=str)
-
+parser.add_argument('--no_rotation_transforms', action="store_true",
+                    help="If this argument is specified, don't use rotations as image transformations.")
+parser.add_argument("--model_type", type=str)
 args = parser.parse_args()
 
 job_id = args.log_dir.split("/")[-1]
@@ -38,7 +40,7 @@ for i, run in enumerate(runs):
                     "--job_id", job_id,
                     "--exp_name", args.exp_name,
                     "--mlflow_dir", "/home/b.dolicki/mlflow_runs",
-                    "--model_type", "e2_resnet18",
+                    "--model_type", args.model_type,
                     "--batch_size", str(512),
                     "--num_workers", str(1),
                     "--num_epochs", str(50), # TODO Change to 50
@@ -46,4 +48,4 @@ for i, run in enumerate(runs):
                     "--weight_decay", str(run[1]),
                     "--lr_scheduler_type", "StepLR",
                     "--optimizer", str(run[2])
-                    ])
+                    ]+(["--no_rotation_transforms"] if args.no_rotation_transforms else []))
