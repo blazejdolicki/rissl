@@ -55,7 +55,7 @@ def convert_config(train_config, default_finetune_config):
 
     # TODO change number of classes to set based on the dataset instead of hardcoding
     num_classes = 2  # hardcoded for PCAM
-    hidden_dim = 2048
+    hidden_dim = 512 # hardcoded for resnet18
 
     finetune_config["config"]["MODEL"]["HEAD"]["PARAMS"] = [
         ["mlp", {"dims": [hidden_dim, num_classes]}],
