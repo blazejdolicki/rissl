@@ -1,0 +1,53 @@
+#!/bin/bash
+
+#SBATCH -N 1 # number of nodes
+#SBATCH --partition=batch
+#SBATCH --job-name=pcam_tuning
+#SBATCH --gpus-per-node=1
+#SBATCH --time=7-00:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+#SBATCH --cpus-per-task=16
+#SBATCH --exclude=eudoxus
+
+LOGS_DIR=/home/b.dolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
+
+source activate e2cnn_cuda11
+cd $HOME/thesis/rissl/
+mkdir -p $CHECKPOINT_DIR
+
+DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam"
+
+use_scratch=true
+
+if [ "$use_scratch" = true ] ; then
+
+  mkdir -p $DATA_SCRATCH_DIR
+  start_time=$(date '+%B %V %T')
+  echo "${start_time}: Copying data from $DATA_HOME_DIR to $DATA_SCRATCH_DIR..."
+
+  # Note: If the source directory has a trailing slash, rsync will copy only the directory
+  # contents to the destination directory. When the trailing slash is omitted, rsync copies the source
+  # directory inside the destination directory.
+
+  rsync -az $DATA_HOME_DIR/ $DATA_SCRATCH_DIR # add -v option for verbose
+  end_time=$(date '+%B %V %T')
+  echo "${end_time}: Finished copying data to scratch"
+
+  OLD_IMG_PATH_PREFIX=$DATA_HOME_DIR
+  NEW_IMG_PATH_PREFIX=$DATA_SCRATCH_DIR
+  DATA_DIR=$DATA_SCRATCH_DIR
+else
+  echo "Data will not be copied to scratch"
+  OLD_IMG_PATH_PREFIX=None
+  NEW_IMG_PATH_PREFIX=None
+  DATA_DIR=$DATA_HOME_DIR
+fi
+
+python hp_tuning/pcam_tuning.py --log_dir $CHECKPOINT_DIR --exp_name pcam_tuning --data_dir $DATA_DIR --model_type resnet18
+
+echo "finished"
+
+# move slurm output from default location to logs after the job is finished
+mv $HOME/thesis/rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

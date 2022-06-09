@@ -53,4 +53,4 @@ python train.py --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR --
 echo "finished"
 
 # move slurm output from default location to logs after the job is finished
-mv $HOME/thesis/ssl-histo/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+mv $HOME/thesis/rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

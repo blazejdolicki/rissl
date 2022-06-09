@@ -6,7 +6,7 @@ import os
 from datasets.pcam_dataset import PCamDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
-
+from datasets.discrete_rotation import DiscreteRotation
 
 def get_transforms(args):
     # define constants
@@ -33,7 +33,7 @@ def get_transforms(args):
                             "train": [
                                 transforms.RandomHorizontalFlip(p=0.5),
                                 transforms.RandomVerticalFlip(p=0.5),
-                                transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
+                                DiscreteRotation(angles=[0, 90, 180, 270]),
                                 transforms.ColorJitter(brightness=64/255,
                                                        saturation=0.25,
                                                        hue=0.04,
@@ -54,11 +54,21 @@ def get_transforms(args):
     train_transform_list = data_transforms[args.dataset]["train"]
     test_transform_list = data_transforms[args.dataset]["test"]
 
+    # remove rotation transformations
+    if args.no_rotation_transforms:
+        logging.info("Not using rotation transforms")
+        remove_rotation_transforms(train_transform_list)
+
     train_transform = transforms.Compose(train_transform_list)
     test_transform = transforms.Compose(test_transform_list)
 
     return train_transform, test_transform
 
+
+def remove_rotation_transforms(transform_list):
+    for t in transform_list:
+        if isinstance(t, DiscreteRotation):
+            transform_list.remove(t)
 
 def get_dataset(train_transform, test_transform, args):
     if args.sample is not None and args.dataset != "pcam":

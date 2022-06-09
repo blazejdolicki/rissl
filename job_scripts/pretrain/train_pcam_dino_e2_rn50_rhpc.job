@@ -2,10 +2,11 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=train_pcam_dino_rn50
+#SBATCH --job-name=train_pcam_dino_e2_rn50
 #SBATCH -t 1:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
+#SBATCH --nodelist=eudoxus
 
 CONFIG_PATH=pretrain/dino/train_dino_e2_resnet
 LOGS_DIR=/home/b.dolicki/logs
