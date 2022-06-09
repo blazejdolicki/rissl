@@ -51,16 +51,18 @@ def convert_config(train_config, default_linear_config):
         "FREEZE_TRUNK_ONLY": True,
     }
 
-    # set up the linear head
-    assert "VISION_TRANSFORMERS" in linear_config["config"]["MODEL"]["TRUNK"], \
-        "This script was made for transformer backbones, do not use it out of the box for CNNs"
+    linear_config["config"]["MODEL"]["TRUNK"] = train_config["config"]["MODEL"]["TRUNK"]
 
-    hidden_dim = linear_config["config"]["MODEL"]["TRUNK"]["VISION_TRANSFORMERS"]["HIDDEN_DIM"]
+
+    # embedding size for ResNet18
+    embedding_size = 512
+
     # TODO change number of classes to set based on the dataset instead of hardcoding
-    num_classes = 9 # hardcoded for NCT
+    num_classes = 2
 
+    # assuming we only want trunk output, not multiple layers
     linear_config["config"]["MODEL"]["HEAD"]["PARAMS"] = [
-        ["mlp", {"dims": [hidden_dim, num_classes]}],
+        ["mlp", {"dims": [embedding_size, num_classes]}],
       ]
 
     # set standard cross-entropy loss for classification
