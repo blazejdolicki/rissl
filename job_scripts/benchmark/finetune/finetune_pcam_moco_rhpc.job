@@ -10,11 +10,14 @@
 
 CONFIG_PATH=benchmark/finetune/moco/moco.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco/12739/model_phase0.torch"
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune/$SLURM_JOB_NAME/$SLURM_JOB_ID
+MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco/12757/model_phase0.torch"
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
+
+#echo "TODO: Specify correct hyperparameters and image transformations"
+#exit 1
 
 # might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
 source activate vissl
@@ -49,6 +52,7 @@ fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
 
+
 python tools/run_distributed_engines.py \
   config=$CONFIG_PATH \
   config.DATA.TRAIN.DATASET_NAMES=[pcam] \
@@ -60,4 +64,8 @@ python tools/run_distributed_engines.py \
   config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
   +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val"] \
   config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-  config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS
+  config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
+  config.OPTIMIZER.num_epochs=1
+
+# move slurm output from default location to logs after the job is finished
+mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
