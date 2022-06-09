@@ -75,21 +75,6 @@ class E2BasicBlock(nn.EquivariantModule):
                 nn.InnerBatchNorm(self.out_type),
                 )
 
-        # FIXME this might not work for BottleNeck
-
-        # if stride != 1 or self.inplanes != planes * block.expansion:
-        #     # TODO Not sure if this works for E2
-        #     print("changed exp out fiber")
-        #     print(f"stride {stride} self.inplanes {self.inplanes} planes*block.expansion {planes * block.expansion}")
-        #     exp_out_fiber = FIBERS[main_fiber](self.gspace, planes * block.expansion, fixparams=self._fixparams)
-        #     print(f"downsampling: main_type {main_type}, next_in_type {self.next_in_type}, exp_out_fiber {exp_out_fiber}")
-        #     print("")
-        #     downsample = nn.SequentialModule(
-        #         conv1x1(self.next_in_type, exp_out_fiber, stride=stride),
-        #         nn.InnerBatchNorm(exp_out_fiber),
-        #     )
-
-
     def forward(self, x: Tensor) -> Tensor:
         identity = x
 
