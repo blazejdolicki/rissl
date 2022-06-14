@@ -205,7 +205,6 @@ def check_args(args):
         f"Model {args.model_type} is not supported. Choose one of the following models: {list(models.keys())}"
     assert not args.multi_gpu or args.ip_address
 
-
 def convert_model_to_single_gpu(state_dict):
     # create new OrderedDict that does not contain `module.`
     from collections import OrderedDict
