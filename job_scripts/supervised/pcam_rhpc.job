@@ -4,14 +4,15 @@
 #SBATCH --partition=batch
 #SBATCH --job-name=pcam
 #SBATCH --gpus-per-node=1
-#SBATCH --time=7-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
+#SBATCH --exclude=eudoxus
 
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
-source activate e2cnn_cuda11
+source activate vissl
 cd $HOME/thesis/rissl/
 mkdir -p $CHECKPOINT_DIR
 
@@ -44,10 +45,11 @@ else
   DATA_DIR=$DATA_HOME_DIR
 fi
 
-# TODO Change to more epochs
+# Hyperparameters from /home/b.dolicki/logs/supervised/pcam_tuning/12723/run_2
 python train.py --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR --mlflow_dir /home/b.dolicki/mlflow_runs \
-                --num_epochs 1 --batch_size=512 --num_workers=1 --model_type resnet18 --max_lr 0.001 \
-                --lr_scheduler_type StepLR --optimizer adam
+                --num_epochs 100 --batch_size=512 --num_workers=1 --model_type resnet18 --max_lr 0.001 \
+                --lr_scheduler_type StepLR --optimizer adam --weight_decay 0.0001 --exp_name pcam
+
 
 echo "finished"
 
