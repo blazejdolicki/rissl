@@ -19,7 +19,7 @@ mkdir -p $CHECKPOINT_DIR
 
 DATA_DIR=$HOME"/thesis/ssl-histo/data/pcam"
 
-python evaluate.py --dataset pcam --data_dir $DATA_DIR --split test --log_dir $CHECKPOINT_DIR \
+python evaluate.py --dataset pcam --data_dir $DATA_DIR --splits valid,test --log_dir $CHECKPOINT_DIR \
                 --checkpoint_path /project/bdolicki/logs/supervised/pcam_multigpu/8984348/checkpoints/model_epoch_14.pt \
                 --batch_size=128 --num_workers=1
 
