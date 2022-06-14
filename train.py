@@ -88,6 +88,8 @@ if __name__ == "__main__":
     elif args.lr_scheduler_type == "StepLR":
         # step_size and gamma from Worrall and Welling, 2019
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
+
+        assert args.dataset == "pcam", "Learning rate scheduler hardcoded for PCam, make sure to adjust it for other datasets"
     else:
         raise ValueError("Incorrect type of learning rate scheduler.")
 
