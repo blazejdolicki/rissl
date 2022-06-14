@@ -2,16 +2,15 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=linear_pcam_moco
+#SBATCH --job-name=pretrain_pcam_moco_no_rot_aug
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/linear/moco/linear_moco.yaml
+CONFIG_PATH=pretrain/moco/pretrain_no_rot_aug.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco/12791/model_phase190.torch"
+CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
@@ -49,20 +48,23 @@ fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
 
+python3 tools/run_distributed_engines.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH\
+    config.DATA.TRAIN.DATASET_NAMES=[pcam] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
+    +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train"] \
+    config.DATA.TEST.DATASET_NAMES=[pcam] \
+    config.DATA.TEST.DATA_SOURCES=[disk_folder] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
+    +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+    config.OPTIMIZER.num_epochs=200 # TODO increase number of epochs to 200 after debugging
 
-python tools/run_distributed_engines.py \
-  config=$CONFIG_PATH \
-  config.DATA.TRAIN.DATASET_NAMES=[pcam] \
-  config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
-  config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
-  +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train"] \
-  config.DATA.TEST.DATASET_NAMES=[pcam] \
-  config.DATA.TEST.DATA_SOURCES=[disk_folder] \
-  config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
-  +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val"] \
-  config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-  config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
-  config.OPTIMIZER.num_epochs=100 # based on https://github.com/facebookresearch/moco/blob/main/main_lincls.py
+# save file with best epoch and loss
+cd $HOME/thesis/rissl
+python tools/best_pretraining_epoch.py --log_dir $CHECKPOINT_DIR
 
 # move slurm output from default location to logs after the job is finished
-mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+mv temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

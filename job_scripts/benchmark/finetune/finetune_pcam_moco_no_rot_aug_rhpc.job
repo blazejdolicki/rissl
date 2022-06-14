@@ -2,19 +2,20 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=linear_pcam_moco
+#SBATCH --job-name=finetune_pcam_moco_no_rot_aug
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/linear/moco/linear_moco.yaml
+CONFIG_PATH=benchmark/finetune/moco/finetune_moco_no_rot_aug.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/$SLURM_JOB_NAME/$SLURM_JOB_ID
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune/$SLURM_JOB_NAME/$SLURM_JOB_ID
 MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco/12791/model_phase190.torch"
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
+
 
 # might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
 source activate vissl
@@ -49,7 +50,7 @@ fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
 
-
+# Hyperparameters from /home/b.dolicki/logs/supervised/pcam_tuning/12723/run_2
 python tools/run_distributed_engines.py \
   config=$CONFIG_PATH \
   config.DATA.TRAIN.DATASET_NAMES=[pcam] \
@@ -62,7 +63,13 @@ python tools/run_distributed_engines.py \
   +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val"] \
   config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
   config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
-  config.OPTIMIZER.num_epochs=100 # based on https://github.com/facebookresearch/moco/blob/main/main_lincls.py
+  config.OPTIMIZER.name=adam \
+  config.OPTIMIZER.param_schedulers.lr.name=multistep \
+  config.OPTIMIZER.param_schedulers.lr.milestones=[40,80] \
+  config.OPTIMIZER.param_schedulers.lr.values=[0.001,0.0001,0.00001] \
+  config.OPTIMIZER.weight_decay=0.0001 \
+  config.OPTIMIZER.num_epochs=100 \
+
 
 # move slurm output from default location to logs after the job is finished
 mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

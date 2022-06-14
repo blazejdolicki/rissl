@@ -2,16 +2,16 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=linear_pcam_moco
+#SBATCH --job-name=linear_pcam_moco_e2
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/linear/moco/linear_moco.yaml
+CONFIG_PATH=benchmark/linear/moco/linear_moco_e2.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco/12791/model_phase190.torch"
+MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco_e2/12792/model_phase180.torch"
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"

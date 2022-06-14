@@ -6,9 +6,9 @@
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
-#SBATCH --exclude=eudoxus
+#SBATCH --nodelist=aristarchus
 
-CONFIG_PATH=pretrain/moco/moco_e2.yaml
+CONFIG_PATH=pretrain/moco/pretrain_moco_e2.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
@@ -61,6 +61,8 @@ python3 tools/run_distributed_engines.py \
     config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
     +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+
+
 
 # move slurm output from default location to logs after the job is finished
 mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
