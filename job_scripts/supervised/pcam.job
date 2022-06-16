@@ -6,8 +6,6 @@
 #SBATCH --gpus-per-node=titanrtx:1
 #SBATCH --time=2-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
-#SBATCH --mail-type=END
-#SBATCH --mail-user=blazejd.shopping@gmail.com
 
 LOGS_DIR=/project/bdolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID

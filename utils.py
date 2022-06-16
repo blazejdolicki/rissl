@@ -19,7 +19,7 @@ def setup_logging(output_dir):
     # get the filename if we want to log to the file as well
     log_filename = f"{output_dir}/log.txt"
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
             logging.FileHandler(log_filename),
@@ -204,7 +204,6 @@ def check_args(args):
     assert args.model_type in models, \
         f"Model {args.model_type} is not supported. Choose one of the following models: {list(models.keys())}"
     assert not args.multi_gpu or args.ip_address
-
 
 def convert_model_to_single_gpu(state_dict):
     # create new OrderedDict that does not contain `module.`

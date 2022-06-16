@@ -37,3 +37,18 @@ python mkfold.py
 Afterwards, create a directory `data/breakhis_fold` and move folders `fold1`, `fold2` etc. there.
 ### Bach
 Download [here](https://zenodo.org/record/3632035#.YbdBDr3MJPa) and unpack in `data/bach`.
+
+## Mean Rotation Error
+To test our implementation of the Mean Rotation Error, activate the conda environment, go to the `rissl` directory and run:
+```python
+$ python test_mre.py
+```
+the expected output is:
+```bash
+2022-06-16 13:28:33,911 [INFO] Random seed: 7
+2022/06/16 13:28:33 INFO mlflow.tracking.fluent: Experiment with name 'test_mre' does not exist. Creating a new experiment.
+2022-06-16 13:28:34,460 [INFO] Train size 10
+2022-06-16 13:28:37,435 [INFO] Model resnet18 initialized from scratch.
+2022-06-16 13:28:38,227 [INFO] MRE(4):  0.0
+Test passed
+```

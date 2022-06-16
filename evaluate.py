@@ -25,15 +25,15 @@ The latter is especially useful for aggregating the results over folds etc.
  
 Example usage (command line):
 ```
-python evaluate.py --checkpoint_path ... --split ...
+python evaluate.py --checkpoint_path ... --splits ...
 ```
 
 Example usage (function):
 ```
 from argparse import Namespace
-args = {"checkpoint_path": ..., "split"}
+args = {"checkpoint_path": ..., "splits"}
 args = Namespace(**args)
-loss, acc = evaluate(args)
+results = evaluate(args)
 ```
 
 """
@@ -49,6 +49,9 @@ def evaluate(args):
     for arg in vars(train_args):
         if not hasattr(args, arg) or getattr(args, arg) is None: # if arg doesn't exist or is None
             setattr(args, arg, getattr(train_args, arg))
+
+    # create logging directory
+    os.makedirs(args.log_dir, exist_ok=True)
 
     utils.setup_logging(args.log_dir)
 
@@ -67,15 +70,27 @@ def evaluate(args):
     with open(args_path, 'w') as file:
         json.dump(vars(args), file, indent=4)
 
+    splits = args.splits.split(",")
+    assert_splits(splits)
+
+    # evaluate one or multiple splits
+    results = {}
+    for split in splits:
+        results[split] = evaluate_split(args, split, transform)
+
+    return results
+
+
+def evaluate_split(args, split, transform):
     if args.dataset == "breakhis_fold":
         num_classes = 4
-        dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
+        dataset = BreakhisFoldDataset(args.data_dir, split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
         num_classes = 4
-        dataset = BreakhisDataset(args.data_dir, args.split, transform)
+        dataset = BreakhisDataset(args.data_dir, split, transform)
     elif args.dataset == "pcam":
         num_classes = 2
-        dataset = PCamDataset(root_dir=args.data_dir, split=args.split, transform=transform)
+        dataset = PCamDataset(root_dir=args.data_dir, split=split, transform=transform, sample=args.sample)
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
@@ -123,21 +138,29 @@ def evaluate(args):
     epoch_loss = epoch_loss / actual_data_size
     epoch_acc = 100 * correct / actual_data_size
 
-    logging.info(f"Test loss: \t{epoch_loss}, test acc: \t{epoch_acc}")
+    logging.info(f"{split} loss: \t{epoch_loss}, {split} acc: \t{epoch_acc}")
 
-    mlflow.log_metric("loss", epoch_loss)
-    mlflow.log_metric("acc", epoch_acc)
+    mlflow.log_metric(f"{split}_loss", epoch_loss)
+    mlflow.log_metric(f"{split}_acc", epoch_acc)
 
     mlflow.end_run()
 
-    return epoch_loss, epoch_acc
+    return {"loss": epoch_loss, "acc": epoch_acc}
+
+def assert_splits(splits):
+    possible_splits = ["train", "test", "valid"]
+    for split in splits:
+        assert split in possible_splits, f"Invalid split name: {split}. Possible splits are: {possible_splits}."
 
 if __name__ == "__main__":
     # in this scripts the default values are usually the values from the training script
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, help='Dataset used for evaluation')
     parser.add_argument('--data_dir', type=str, help='Directory of the data')
-    parser.add_argument('--split', type=str, required=True, choices=["train", "test", "valid"])
+    parser.add_argument('--splits', type=str, required=True,
+                        help="One or multiple comma-delimted splits. Usually we use valid and test (so 'valid,test'), "
+                             "to double check that the validation metrics overlap with the numbers from training logs "
+                             "and to obtain the test metrics.")
     parser.add_argument('--checkpoint_path', type=str, required=True,
                         help="Path to a trained model used for evaluation")
     parser.add_argument('--exp_name', type=str,
@@ -155,4 +178,8 @@ if __name__ == "__main__":
                         help="Directory with MLFlow logs")
     args = parser.parse_args()
 
-    loss, acc = evaluate(args)
+    results = evaluate(args)
+
+    results_path = os.path.join(args.log_dir, "results.json")
+    with open(results_path, 'w') as file:
+        json.dump(results, file, indent=4)
