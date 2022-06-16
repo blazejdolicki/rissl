@@ -19,7 +19,7 @@ def setup_logging(output_dir):
     # get the filename if we want to log to the file as well
     log_filename = f"{output_dir}/log.txt"
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
             logging.FileHandler(log_filename),
