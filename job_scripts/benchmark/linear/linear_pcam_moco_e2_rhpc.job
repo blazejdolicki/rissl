@@ -62,6 +62,7 @@ python tools/run_distributed_engines.py \
   +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val"] \
   config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
   config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
+  config.CHECKPOINT.CHECKPOINT_FREQUENCY=1 \
   config.OPTIMIZER.num_epochs=100 # based on https://github.com/facebookresearch/moco/blob/main/main_lincls.py
 
 # move slurm output from default location to logs after the job is finished
