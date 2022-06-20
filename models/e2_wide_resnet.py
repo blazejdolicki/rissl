@@ -138,6 +138,7 @@ class Wide_ResNet(torch.nn.Module):
                  fixparams: bool = True,
                  initial_stride: int = 1,
                  conv2triv: bool = True,
+                 num_channels=3
                  ):
         super(Wide_ResNet, self).__init__()
 
@@ -179,7 +180,7 @@ class Wide_ResNet(torch.nn.Module):
             id = (0, 1) if self._f else 1
             self.gspace, _, _ = self.gspace.restrict(id)
         
-        r1 = nn.FieldType(self.gspace, [self.gspace.trivial_repr] * 3)
+        r1 = nn.FieldType(self.gspace, [self.gspace.trivial_repr] * num_channels)
         self.in_type = r1
         
         # r2 = FIBERS[main_fiber](self.gspace, nStages[0], fixparams=self._fixparams)
