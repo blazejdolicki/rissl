@@ -223,7 +223,7 @@ class E2ResNet(torch.nn.Module):
         zero_init_residual: bool = False,
         groups: int = 1,
         width_per_group: int = 64,
-        num_channels=3,
+        num_input_channels=3,
         replace_stride_with_dilation: Optional[List[bool]] = None
     ) -> None:
         """
@@ -295,7 +295,7 @@ class E2ResNet(torch.nn.Module):
         # Start building layers
 
         # field type of layer lifting the Z^2 input to N rotations
-        self.in_lifting_type = nn.FieldType(self.gspace, [self.gspace.trivial_repr] * num_channels)
+        self.in_lifting_type = nn.FieldType(self.gspace, [self.gspace.trivial_repr] * num_input_channels)
 
         # field type for the first lifted layer
         self.next_in_type = FIBERS[main_fiber](self.gspace, self.inplanes, fixparams=self._fixparams)
