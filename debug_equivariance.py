@@ -13,8 +13,8 @@ from e2cnn import gspaces
 from e2cnn import nn
 
 import sys
-# sys.path.insert(0, "/home/b.dolicki/thesis/")
-sys.path.insert(0, "D://Blazej//Dokumenty//AI MSc//Thesis//thesis")
+sys.path.insert(0, "/home/b.dolicki/thesis/")
+# sys.path.insert(0, "D://Blazej//Dokumenty//AI MSc//Thesis//thesis")
 from rissl.models.e2_resnet import  e2_resnet18
 
 # Let's try the model on *rotated* MNIST
@@ -43,7 +43,11 @@ parser = ArgumentParser()
 parser.add_argument('--model_type', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--N', type=int)
+parser.add_argument('--train', action='store_true')
 args = parser.parse_args()
+
+print("args")
+print(args)
 
 # Build the dataset
 
@@ -88,16 +92,31 @@ totensor = ToTensor()
 
 # Let's build the model
 
-# In[6]:
+# build the test set
+if args.dataset == "mnist":
+    test_set = MnistRotDataset(mode='test')
+    num_input_channels = 1
+    num_classes = 10
+else:
+    raise NotImplementedError
 
-from rissl.models.e2_wide_resnet import e2wrn28_10R, e2wrn28_7R
+from rissl.models.e2_resnet_less_layers import e2_resnet18_less_layers
+from rissl.models.e2_wide_resnet import e2wrn28_7R
+from rissl.models.e2_wide_resnet_more_layers import e2wrn28_7R_more_layers
 from rissl.models.resnet import ResNet, BasicBlock
 
-
 if args.model_type == "e2_resnet_incorrect":
-    model = e2_resnet18(N=args.N, F=1.0, sigma=0.45, restrict=-1, flip=False, fixparams=False, num_classes=10, num_input_channels=3, conv2triv=False).to(device)
+    model = e2_resnet18(N=args.N, F=1.0, sigma=0.45, restrict=-1, flip=False, fixparams=False,
+                        num_classes=num_classes, num_input_channels=num_input_channels, conv2triv=False).to(device)
+elif args.model_type == "e2_resnet_correct":
+    model = e2_resnet18_less_layers(N=args.N, F=1.0, sigma=0.45, restrict=-1, flip=False, fixparams=False,
+                        num_classes=num_classes, num_input_channels=num_input_channels, conv2triv=False).to(device)
 elif args.model_type == "e2_wideresnet_correct":
-    model = e2wrn28_7R(N=args.N, F=1.0, sigma=0.45, r=-1, fixparams=False, num_classes=10, num_channels=1).to(device)
+    model = e2wrn28_7R(N=args.N, F=1.0, sigma=0.45, r=-1, fixparams=False,
+                       num_classes=num_classes, num_channels=num_input_channels, conv2triv=False).to(device)
+elif args.model_type == "e2_wideresnet_incorrect":
+    model = e2wrn28_7R_more_layers(N=args.N, F=1.0, sigma=0.45, r=-1, fixparams=False,
+                                   num_classes=num_classes, num_channels=num_input_channels, conv2triv=False).to(device)
 else:
     assert False
 
@@ -138,11 +157,7 @@ def test_model(model: torch.nn.Module, x: Image):
     print()
 
 
-# build the test set
-if args.dataset == "mnist":
-    test_set = MnistRotDataset(mode='test')
-else:
-    raise NotImplementedError
+
 
 # retrieve the first image from the test set
 x, y = next(iter(test_set))
