@@ -16,6 +16,7 @@ import sys
 sys.path.insert(0, "/home/b.dolicki/thesis/")
 # sys.path.insert(0, "D://Blazej//Dokumenty//AI MSc//Thesis//thesis")
 from rissl.models.e2_resnet import  e2_resnet18
+from rissl.datasets.dummy_dataset import DummyDataset
 
 # Let's try the model on *rotated* MNIST
 
@@ -30,6 +31,7 @@ from torchvision.transforms import Pad
 from torchvision.transforms import Resize
 from torchvision.transforms import ToTensor
 from torchvision.transforms import Compose
+import torchvision.transforms.functional as F
 
 import numpy as np
 
@@ -44,7 +46,13 @@ parser.add_argument('--model_type', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--N', type=int)
 parser.add_argument('--train', action='store_true')
+parser.add_argument('--img_size', default=29, type=int)
+parser.add_argument('--num_classes', default=10, type=int)
+parser.add_argument('--num_input_channels', default=1, type=int)
+
 args = parser.parse_args()
+
+assert not (args.train and args.dataset == "dummy")
 
 print("args")
 print(args)
@@ -88,17 +96,30 @@ pad = Pad((0, 0, 1, 1), fill=0)
 # resize1 = Resize(87)
 # resize2 = Resize(29)
 
+
 totensor = ToTensor()
+
+test_transform = Compose([
+        pad,
+        totensor,
+    ])
 
 # Let's build the model
 
 # build the test set
 if args.dataset == "mnist":
-    test_set = MnistRotDataset(mode='test')
     num_input_channels = 1
     num_classes = 10
+    img_size=29
+    test_set = MnistRotDataset(mode='test', transform=test_transform)
+elif args.dataset == "dummy":
+    num_classes = args.num_classes
+    img_size = args.img_size
+    num_input_channels = args.num_input_channels
+    test_set = DummyDataset(img_width=img_size, img_height=img_size, num_channels=num_input_channels,
+                            num_classes=num_classes, rotation_invariant=False, size=100)
 else:
-    raise NotImplementedError
+    raise NotImplementedError()
 
 from rissl.models.e2_resnet_less_layers import e2_resnet18_less_layers
 from rissl.models.e2_wide_resnet import e2wrn28_7R
@@ -133,19 +154,18 @@ print(model)
 # we feed eight rotated versions of the first image in the test set and print the output logits of the model for each of them.
 
 
-def test_model(model: torch.nn.Module, x: Image):
+def test_model(model: torch.nn.Module, x):
     # evaluate the `model` on 8 rotated versions of the input image `x`
     model.eval()
 
-    x = pad(x)
-    
+
     print()
     print('##########################################################################################')
     header = 'angle |  ' + '  '.join(["{:6d}".format(d) for d in range(10)])
     print(header)
     with torch.no_grad():
         for r in range(8):
-            x_transformed = totensor(x.rotate(r*45., Image.BILINEAR)).reshape(1, 1, 29, 29)
+            x_transformed = F.rotate(x, r*45.).reshape(1, 1, img_size, img_size)
             x_transformed = x_transformed.to(device)
 
             y = model(x_transformed)
@@ -178,10 +198,7 @@ if args.train:
     train_loader = torch.utils.data.DataLoader(mnist_train, batch_size=64)
 
 
-    test_transform = Compose([
-        pad,
-        totensor,
-    ])
+
     mnist_test = MnistRotDataset(mode='test', transform=test_transform)
     test_loader = torch.utils.data.DataLoader(mnist_test, batch_size=64)
 
