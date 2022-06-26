@@ -6,6 +6,7 @@ import numpy as np
 import random
 import mlflow
 import copy
+import torchvision.transforms.functional as F
 
 from models import models
 from collect_env import collect_env_info
@@ -125,6 +126,9 @@ def read_args(parser):
                         help="Use profiling to track CPU and GPU performance and memory")
     parser.add_argument('--no_rotation_transforms', action="store_true",
                         help="If this argument is specified, don't use rotations as image transformations.")
+    parser.add_argument('--check_model_equivariance', action="store_true",
+                        help="Check if the model is equivariant, by comparing outputs "
+                             "for multiple rotations of the same image")
     # Distributed training
     parser.add_argument('--num_nodes', default=1, type=int,
                         help="Number of nodes used for training")
@@ -226,3 +230,31 @@ def add_transform_to_args(train_transform, test_transform):
     return transform
 
 
+def check_model_equivariance(model, dataloader, device, num_classes):
+    # evaluate the `model` on 8 rotated versions of the input image `x`
+    model.eval()
+
+    # take first image
+    x = next(iter(dataloader))[0][0]
+    ys = []
+
+    logging.info("Probabilities of rotations of a single image")
+    logging.info('#'*(num_classes+1)*6)
+    header = 'angle |  ' + '  '.join(["{:6d}".format(d) for d in range(num_classes)])
+    logging.info(header)
+    with torch.no_grad():
+        for r in range(4):
+            x_transformed = F.rotate(x, r*90.).unsqueeze(dim=0) #.reshape(1, 1, img_size, img_size)
+            x_transformed = x_transformed.to(device)
+
+            y = model(x_transformed)
+            y = y.to('cpu').numpy().squeeze()
+            ys.append(y)
+
+            angle = r * 90
+            logging.info("{:5d} : {}".format(angle, y))
+
+            # check the first rotation is almost equal to all other rotations
+            assert np.allclose(ys[0], y, atol=1e-03), "The model is not equivariant."
+    logging.info('#' * (num_classes + 2) * 6)
+    logging.info("")
