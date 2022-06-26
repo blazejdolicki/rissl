@@ -7,10 +7,11 @@ from datasets.pcam_dataset import PCamDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.discrete_rotation import DiscreteRotation
+from models import is_equivariant
 
 def get_transforms(args):
     # define constants
-    PCAM_IMG_WIDTH = PCAM_IMG_HEIGHT = 96
+    data_img_sizes = {"pcam":96}
 
     data_transforms = {
                         "_default": {
@@ -40,7 +41,8 @@ def get_transforms(args):
                                                        contrast=0.75),
                                 #  8px jitter (shift) following Liu et al 2017
                                 transforms.RandomAffine(degrees=0,
-                                                        translate=(4/PCAM_IMG_WIDTH, 4/PCAM_IMG_HEIGHT)),
+                                                        translate=(4/data_img_sizes["pcam"],
+                                                                   4/data_img_sizes["pcam"])),
                                 transforms.ToTensor(),
                             ],
                             "test": [transforms.ToTensor()]
@@ -53,6 +55,14 @@ def get_transforms(args):
 
     train_transform_list = data_transforms[args.dataset]["train"]
     test_transform_list = data_transforms[args.dataset]["test"]
+
+    # To preserve equivariance, we need to pick image size that ensures all feature maps are odd-sized
+    # https://arxiv.org/pdf/2004.09691.pdf (Figure 2)
+    if is_equivariant(args.model_type):
+        assert args.dataset=="pcam", f"Check if the size will be correct for other {args.dataset} dataset"
+        resize = transforms.Resize(data_img_sizes[args.dataset]+1)
+        train_transform_list.insert(0, resize)
+        test_transform_list.insert(0, resize)
 
     # remove rotation transformations
     if args.no_rotation_transforms:
