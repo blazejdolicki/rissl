@@ -18,7 +18,7 @@ DATA_DIR="/mnt/archive/projectdata/data_pcam"
 
 python evaluate_mre.py --dataset pcam --data_dir $DATA_DIR --split test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
-                --checkpoint_path /home/b.dolicki/logs/supervised/pcam_e2/important/12944/checkpoints/model_epoch_17.pt \
+                --checkpoint_path /home/b.dolicki/logs/supervised/pcam_e2_tuning/13636/run_0/checkpoints/model_epoch_8.pt \
                 --batch_size=512 --num_workers=1 --exp_name mre_pcam
 
 echo "finished"

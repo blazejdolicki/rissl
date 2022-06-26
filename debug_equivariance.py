@@ -31,7 +31,7 @@ from torchvision.transforms import Pad
 from torchvision.transforms import Resize
 from torchvision.transforms import ToTensor
 from torchvision.transforms import Compose
-import torchvision.transforms.functional as F
+
 
 import numpy as np
 
@@ -158,7 +158,6 @@ def test_model(model: torch.nn.Module, x):
     # evaluate the `model` on 8 rotated versions of the input image `x`
     model.eval()
 
-
     print()
     print('##########################################################################################')
     header = 'angle |  ' + '  '.join(["{:6d}".format(d) for d in range(10)])
@@ -175,8 +174,6 @@ def test_model(model: torch.nn.Module, x):
             print("{:5d} : {}".format(angle, y))
     print('##########################################################################################')
     print()
-
-
 
 
 # retrieve the first image from the test set
@@ -204,8 +201,6 @@ if args.train:
 
     loss_function = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5, weight_decay=1e-5)
-
-
 
     from tqdm import tqdm
     for epoch in tqdm(range(5)):

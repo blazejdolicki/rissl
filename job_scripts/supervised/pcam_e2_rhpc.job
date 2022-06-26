@@ -49,7 +49,8 @@ fi
 # Hyperparameters from /home/b.dolicki/logs/supervised/pcam_e2_tuning/12719/run_0
 python train.py --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR --mlflow_dir /home/b.dolicki/mlflow_runs \
                 --num_epochs 100 --batch_size=512 --num_workers=1 --model_type e2_resnet18 --max_lr 0.01 \
-                --lr_scheduler_type StepLR --optimizer adam --weight_decay 0.000001 --exp_name pcam_e2 --no_rotation_transforms
+                --lr_scheduler_type StepLR --optimizer adam --weight_decay 0.000001 --exp_name pcam_e2 \
+                --no_rotation_transforms
 
 echo "finished"
 
