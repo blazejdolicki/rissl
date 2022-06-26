@@ -2,7 +2,6 @@ import torch
 from torch import Tensor
 from typing import Type, Any, Callable, Union, List, Optional
 import logging
-import torch.nn.functional as F
 
 from e2cnn import nn
 from e2cnn import gspaces
@@ -304,8 +303,8 @@ class E2ResNet(torch.nn.Module):
         num_channels = [64, 128, 256, 512]
         # For this initial cnn, torchvision ResNet uses kernel_size=7, stride=2, padding=3
         # wide_resnet.py uses kernel_size=3, stride=1, padding=1
-        # and e2_wideresnet.py uses kernel_size=5. We follow the latter.
-        self.conv1 = conv5x5(self.in_lifting_type, self.next_in_type, sigma=sigma, F=F, initialize=False)
+        # and e2_wideresnet.py uses kernel_size=5. We follow the former.
+        self.conv1 = conv7x7(self.in_lifting_type, self.next_in_type, stride=2, sigma=sigma, F=F, initialize=False)
         self.bn1 = nn.InnerBatchNorm(self.next_in_type)
         self.relu = nn.ReLU(self.next_in_type, inplace=True)
         self.maxpool = nn.PointwiseMaxPool(self.next_in_type, kernel_size=3, stride=2, padding=1)
