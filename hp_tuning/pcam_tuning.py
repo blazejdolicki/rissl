@@ -24,7 +24,7 @@ search = {"max_lrs": [0.1, 0.01, 0.001, 0.0001],
 hyperparams = [search[hp] for hp in search]
 
 num_runs = 24
-runs = sample_runs(num_runs, *hyperparams)
+runs = sample_runs(num_runs, *hyperparams)[:5] # TODO fix later
 
 import numpy as np
 runs = np.array(runs)
@@ -47,5 +47,6 @@ for i, run in enumerate(runs):
                     "--max_lr", str(run[0]),
                     "--weight_decay", str(run[1]),
                     "--lr_scheduler_type", "StepLR",
-                    "--optimizer", str(run[2])
+                    "--optimizer", str(run[2]),
+                    "--fixparams"
                     ]+(["--no_rotation_transforms"] if args.no_rotation_transforms else []))

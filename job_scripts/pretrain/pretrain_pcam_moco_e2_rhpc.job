@@ -6,7 +6,7 @@
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
-#SBATCH --nodelist=aristarchus
+
 
 CONFIG_PATH=pretrain/moco/pretrain_moco_e2.yaml
 LOGS_DIR=/home/b.dolicki/logs
@@ -61,6 +61,7 @@ python3 tools/run_distributed_engines.py \
     config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
     +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+    config.OPTIMIZER.num_epochs=1 # TODO change this and learning rate scheduler back to normal after debugging
 
 
 

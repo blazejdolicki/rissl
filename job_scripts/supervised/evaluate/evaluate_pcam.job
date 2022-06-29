@@ -15,10 +15,14 @@ cd $HOME/thesis/ssl-histo/
 mkdir -p $CHECKPOINT_DIR
 
 DATA_DIR="/mnt/archive/projectdata/data_pcam"
+# supervised pcam non-e2
+#MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam/important/12932/checkpoints/model_epoch_45.pt"
+# linear pcam non-e2 no rotations
+MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_no_rot_aug/13084/converted_vissl_model_final_checkpoint_phase99.torch"
 
 python evaluate.py --dataset pcam --data_dir $DATA_DIR --split valid,test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
-                --checkpoint_path /home/b.dolicki/logs/supervised/pcam/important/12932/checkpoints/model_epoch_45.pt \
+                --checkpoint_path $MODEL_WEIGHTS
                 --batch_size=512 --num_workers=1
 
 echo "finished"
