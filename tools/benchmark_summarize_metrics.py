@@ -27,7 +27,7 @@ with open(metrics_path) as json_file:
     print("metrics valid", metrics["valid"])
 
 metrics_summmary = {"best_valid_acc": np.max(metrics["valid"]),
-                    "best_valid_epoch": np.argmax(metrics["valid"]),
+                    "best_valid_epoch": int(np.argmax(metrics["valid"])),
                     "final_valid_acc": metrics["valid"][-1],
                     }
 
