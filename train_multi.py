@@ -53,7 +53,7 @@ def train(local_rank, args):
     train_transform, test_transform = get_transforms(args)
 
     if local_rank == 0:
-        args.transform = utils.add_transform_to_args(train_transform, test_transform)
+        args.transform = utils.add_transforms_to_args(train_transform, test_transform)
 
         utils.setup_mlflow(args)
 

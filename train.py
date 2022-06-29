@@ -34,7 +34,7 @@ if __name__ == "__main__":
     utils.fix_seed(args.seed)
 
     train_transform, valid_transform = get_transforms(args)
-    args.transform = utils.add_transform_to_args(train_transform, valid_transform)
+    args.transform = utils.add_transforms_to_args(train_transform, valid_transform)
 
     utils.setup_mlflow(args)
 

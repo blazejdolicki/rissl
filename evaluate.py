@@ -39,30 +39,14 @@ results = evaluate(args)
 """
 
 def evaluate(args):
-    # read arguments of the training job
-    train_log_dir = Path(args.checkpoint_path).parent.parent
-    with open(os.path.join(train_log_dir, "args.json")) as json_file:
-        train_args = json.load(json_file)
-        train_args = Namespace(**train_args)
-
-    # if argument not specified for evaluation, use the value from training config
-    for arg in vars(train_args):
-        if not hasattr(args, arg) or getattr(args, arg) is None: # if arg doesn't exist or is None
-            setattr(args, arg, getattr(train_args, arg))
-
-    # create logging directory
+    # Our logging needs to be defined before importing libraries that set up their own logging such as get_transform()
+    # https://stackoverflow.com/questions/20240464/python-logging-file-is-not-working-when-using-logging-basicconfig
     os.makedirs(args.log_dir, exist_ok=True)
-
     utils.setup_logging(args.log_dir)
 
+    args, transform = utils.parse_args_from_checkpoint(args)
+
     utils.fix_seed(args.seed)
-
-    # here we have to set the transforms manually because reading them from saved config is not trivial to implement
-    transform = transforms.Compose([transforms.ToTensor()])
-
-    transform_list_str = [str(t) for t in transform.transforms]
-    assert transform_list_str == args.transform["test"], \
-        "Current image transformations are different than those used for evaluation during training"
 
     utils.setup_mlflow(args)
 
@@ -100,16 +84,14 @@ def evaluate_split(args, split, transform):
     model = get_model(args.model_type, num_classes, args).to(device)
 
     # load model from checkpoint
-    start_time = time.time()
-
+    logging.info(f"Loading model {args.model_type} from {args.checkpoint_path}")
     state_dict = torch.load(args.checkpoint_path)
 
     if args.multi_gpu:
         state_dict = utils.convert_model_to_single_gpu(state_dict)
 
     model.load_state_dict(state_dict)
-    end_time = time.time()
-    logging.debug(f"Loading the model took {end_time - start_time} seconds")
+    model.eval()
 
     criterion = torch.nn.CrossEntropyLoss()
 
@@ -118,7 +100,7 @@ def evaluate_split(args, split, transform):
     actual_data_size = 0.0
     with torch.no_grad():
         for batch in dataloader:
-            model.eval()
+
 
             inputs, labels = batch
             batch_size = inputs.shape[0]
@@ -176,6 +158,10 @@ if __name__ == "__main__":
                         help="Directory with logs: checkpoints, parameters, metrics")
     parser.add_argument("--mlflow_dir", type=str, default="/project/bdolicki/mlflow_runs",
                         help="Directory with MLFlow logs")
+    parser.add_argument('--sample', type=float, default=None,
+                        help='A fraction or number of examples that will be subsampled from the full dataset. '
+                             'Useful for quick debugging and experiments with low data regimes.')
+
     args = parser.parse_args()
 
     results = evaluate(args)

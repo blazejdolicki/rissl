@@ -2,17 +2,22 @@ import logging
 
 from torchvision import transforms
 import os
+from enum import Enum
 
 from datasets.pcam_dataset import PCamDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.discrete_rotation import DiscreteRotation
 from models import is_equivariant
+from enum import Enum
+
+
+
 
 def get_transforms(args):
-    # define constants
-    data_img_sizes = {"pcam":96}
-
+    # define img size of all datasets
+    data_img_sizes = {"pcam": 96}
+    
     data_transforms = {
                         "_default": {
                             "train": [
@@ -99,3 +104,20 @@ def get_dataset(train_transform, test_transform, args):
         test_dataset = PCamDataset(root_dir=args.data_dir, split="valid", transform=test_transform, sample=args.sample)
 
     return train_dataset, test_dataset, num_classes
+
+
+def convert_transform_to_dict(transform):
+    transform_vars = {}
+    transform_vars["name"] = transform.__class__.__name__
+
+    for var, value in transform.__dict__.items():
+        # Enums cannot be serialized to JSON
+        if var != "training" and not var.startswith("_") and not isinstance(value, Enum):
+            transform_vars[var] = value
+    return transform_vars
+
+
+def convert_dict_to_transform(transform_dict):
+    transform_args = {k: v for k, v in transform_dict.items() if k != "name"}
+    transform = getattr(transforms, transform_dict["name"])(**transform_args)
+    return transform
