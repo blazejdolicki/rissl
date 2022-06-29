@@ -270,6 +270,8 @@ def check_model_equivariance(model, dataloader, device, num_classes):
     logging.info("")
 
 def parse_args_from_checkpoint(args):
+
+
     if args.checkpoint_path is not None:
         if "supervised" in args.checkpoint_path:
             # read arguments of the training job
@@ -293,7 +295,8 @@ def parse_args_from_checkpoint(args):
             from vissl.data.ssl_transforms import get_transform
 
             # convert transforms from yaml to transform.Compose to list
-            test_transform = get_transform(train_config["DATA"][args.split.upper()]["TRANSFORMS"])
+            # hardcode test because it's almost always the case and a general implementation is unnecessarily complex
+            test_transform = get_transform(train_config["DATA"]["TEST"]["TRANSFORMS"])
             transform_list = [t.transform for t in test_transform.transforms]
 
             model_family = train_config["MODEL"]["TRUNK"]["NAME"]

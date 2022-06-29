@@ -130,7 +130,7 @@ def evaluate_split(args, split, transform):
     return {"loss": epoch_loss, "acc": epoch_acc}
 
 def assert_splits(splits):
-    possible_splits = ["train", "test", "valid"]
+    possible_splits = ["test", "valid"]
     for split in splits:
         assert split in possible_splits, f"Invalid split name: {split}. Possible splits are: {possible_splits}."
 
