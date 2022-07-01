@@ -145,7 +145,7 @@ if __name__ == "__main__":
                              "and to obtain the test metrics.")
     parser.add_argument('--checkpoint_path', type=str, required=True,
                         help="Path to a trained model used for evaluation")
-    parser.add_argument('--exp_name', type=str,
+    parser.add_argument('--exp_name', type=str, default="Default",
                         help='MLFlow experiment folder where the results will be logged')
     parser.add_argument('--fold', type=int, choices=[1, 2, 3, 4, 5],
                         help='Fold used for training and testing')
