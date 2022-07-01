@@ -8,11 +8,9 @@
 #SBATCH --output=temp_logs/slurm_output_%j.out
 
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/supervised/mre/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 source activate vissl
-cd $HOME/thesis/ssl-histo/
-mkdir -p $CHECKPOINT_DIR
+cd $HOME/thesis/rissl/
 
 DATA_DIR="/mnt/archive/projectdata/data_pcam"
 
@@ -21,12 +19,17 @@ MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam/important/12932/checkpoints/
 # linear pcam non-e2 no rotations
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_no_rot_aug/13084/converted_vissl_model_final_checkpoint_phase99.torch"
 
+# set checkpoint dir to be inside log dir of the log dir of the loaded model
+CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })
+unset CHECKPOINT_DIR[-1]
+CHECKPOINT_DIR=/$(IFS=/ ; echo "${CHECKPOINT_DIR[*]}")/evaluate/$SLURM_JOB_ID
+mkdir -p $CHECKPOINT_DIR
+
 
 python evaluate_mre.py --dataset pcam --data_dir $DATA_DIR --split test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
                 --checkpoint_path $MODEL_WEIGHTS \
-                --batch_size=5 --num_workers=1 --exp_name mre_pcam --mre_n 16 --sample 100 --save_samples 5
-# TODO fix that before the proper results
+                --batch_size=512 --num_workers=1 --exp_name mre_pcam --mre_n 4
 
 echo "finished"
 
