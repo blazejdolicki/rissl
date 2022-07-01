@@ -24,7 +24,7 @@ search = {"max_lrs": [0.1, 0.01, 0.001, 0.0001],
 hyperparams = [search[hp] for hp in search]
 
 num_runs = 24
-runs = sample_runs(num_runs, *hyperparams)[:5] # TODO fix later
+runs = sample_runs(num_runs, *hyperparams)
 
 import numpy as np
 runs = np.array(runs)
