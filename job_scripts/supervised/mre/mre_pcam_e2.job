@@ -13,12 +13,15 @@ CHECKPOINT_DIR=$LOGS_DIR/supervised/mre/$SLURM_JOB_NAME/$SLURM_JOB_ID
 source activate vissl
 cd $HOME/thesis/rissl/
 mkdir -p $CHECKPOINT_DIR
-
 DATA_DIR="/mnt/archive/projectdata/data_pcam"
+
+#MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2_tuning/13636/run_0/checkpoints/model_epoch_8.pt"
+# check if pretrained e2 is really equivariant
+MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_e2/13759/converted_vissl_model_final_checkpoint_phase0.torch"
 
 python evaluate_mre.py --dataset pcam --data_dir $DATA_DIR --split test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
-                --checkpoint_path /home/b.dolicki/logs/supervised/pcam_e2/important/12944/checkpoints/model_epoch_17.pt \
+                --checkpoint_path $MODEL_WEIGHTS \
                 --batch_size=512 --num_workers=1 --exp_name mre_pcam
 
 echo "finished"

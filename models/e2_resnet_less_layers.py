@@ -2,6 +2,7 @@ import torch
 from torch import Tensor
 from typing import Type, Any, Callable, Union, List, Optional
 import logging
+import torch.nn.functional as F
 
 from e2cnn import nn
 from e2cnn import gspaces
@@ -201,7 +202,7 @@ class E2Bottleneck(nn.EquivariantModule):
     def evaluate_output_shape(self, input_shape):
         raise NotImplementedError
 
-class E2ResNet(torch.nn.Module):
+class E2ResNetLessLayers(torch.nn.Module):
 
     def __init__(
         self,
@@ -245,7 +246,7 @@ class E2ResNet(torch.nn.Module):
         :param width_per_group:
         :param replace_stride_with_dilation:
         """
-        super(E2ResNet, self).__init__()
+        super(E2ResNetLessLayers, self).__init__()
 
         # Standard initialization of ResNet
 
@@ -303,8 +304,8 @@ class E2ResNet(torch.nn.Module):
         num_channels = [64, 128, 256, 512]
         # For this initial cnn, torchvision ResNet uses kernel_size=7, stride=2, padding=3
         # wide_resnet.py uses kernel_size=3, stride=1, padding=1
-        # and e2_wideresnet.py uses kernel_size=5. We follow the former.
-        self.conv1 = conv7x7(self.in_lifting_type, self.next_in_type, stride=2, sigma=sigma, F=F, initialize=False)
+        # and e2_wideresnet.py uses kernel_size=5. We follow the latter.
+        self.conv1 = conv5x5(self.in_lifting_type, self.next_in_type, sigma=sigma, F=F, initialize=False)
         self.bn1 = nn.InnerBatchNorm(self.next_in_type)
         self.relu = nn.ReLU(self.next_in_type, inplace=True)
         self.maxpool = nn.PointwiseMaxPool(self.next_in_type, kernel_size=3, stride=2, padding=1)
@@ -314,28 +315,6 @@ class E2ResNet(torch.nn.Module):
 
         self.layer1 = self._make_layer(block, num_channels[0], layers[0], stride=initial_stride,
                                        dilate=replace_stride_with_dilation[0],
-                                       main_fiber=main_fiber, inner_fiber=inner_fiber)
-
-        # first restriction layer
-        if self._r > 0:
-            id = (0, 4) if self._f else 4
-            self.restrict1 = self._restrict_layer(id)
-        else:
-            self.restrict1 = lambda x: x
-
-        self.layer2 = self._make_layer(block, num_channels[1], layers[1], stride=2,
-                                       dilate=replace_stride_with_dilation[0],
-                                       main_fiber=main_fiber, inner_fiber=inner_fiber)
-
-        # second restriction layer
-        if self._r > 1:
-            id = (0, 1) if self._f else 1
-            self.restrict2 = self._restrict_layer(id)
-        else:
-            self.restrict2 = lambda x: x
-
-        self.layer3 = self._make_layer(block, num_channels[2], layers[2], stride=2,
-                                       dilate=replace_stride_with_dilation[1],
                                        main_fiber=main_fiber, inner_fiber=inner_fiber)
 
         if self.conv2triv:
@@ -491,8 +470,6 @@ class E2ResNet(torch.nn.Module):
         x = self.maxpool(x)
 
         x = self.layer1(x)
-        x = self.layer2(self.restrict1(x))
-        x = self.layer3(self.restrict2(x))
         x = self.layer4(x)
 
         if not self.conv2triv:
@@ -507,8 +484,8 @@ class E2ResNet(torch.nn.Module):
         return self._forward_impl(x)
 
 # Note: More architectures can be added here as desired, following resnet.py
-def e2_resnet18(**model_args):
-    return E2ResNet(block=E2BasicBlock, layers=[2, 2, 2, 2], **model_args)
+def e2_resnet18_less_layers(**model_args):
+    return E2ResNetLessLayers(block=E2BasicBlock, layers=[2, 2, 2, 2], **model_args)
 
 
 def e2_resnet50(**model_args):

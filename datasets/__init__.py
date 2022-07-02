@@ -2,16 +2,22 @@ import logging
 
 from torchvision import transforms
 import os
+from enum import Enum
 
 from datasets.pcam_dataset import PCamDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.discrete_rotation import DiscreteRotation
+from models import is_equivariant
+from enum import Enum
+
+
+
 
 def get_transforms(args):
-    # define constants
-    PCAM_IMG_WIDTH = PCAM_IMG_HEIGHT = 96
-
+    # define img size of all datasets
+    data_img_sizes = {"pcam": 96}
+    
     data_transforms = {
                         "_default": {
                             "train": [
@@ -40,7 +46,8 @@ def get_transforms(args):
                                                        contrast=0.75),
                                 #  8px jitter (shift) following Liu et al 2017
                                 transforms.RandomAffine(degrees=0,
-                                                        translate=(4/PCAM_IMG_WIDTH, 4/PCAM_IMG_HEIGHT)),
+                                                        translate=(4/data_img_sizes["pcam"],
+                                                                   4/data_img_sizes["pcam"])),
                                 transforms.ToTensor(),
                             ],
                             "test": [transforms.ToTensor()]
@@ -53,6 +60,14 @@ def get_transforms(args):
 
     train_transform_list = data_transforms[args.dataset]["train"]
     test_transform_list = data_transforms[args.dataset]["test"]
+
+    # To preserve equivariance, we need to pick image size that ensures all feature maps are odd-sized
+    # https://arxiv.org/pdf/2004.09691.pdf (Figure 2)
+    if is_equivariant(args.model_type):
+        assert args.dataset=="pcam", f"Check if the size will be correct for other {args.dataset} dataset"
+        resize = transforms.Resize(data_img_sizes[args.dataset]+1)
+        train_transform_list.insert(0, resize)
+        test_transform_list.insert(0, resize)
 
     # remove rotation transformations
     if args.no_rotation_transforms:
@@ -89,3 +104,20 @@ def get_dataset(train_transform, test_transform, args):
         test_dataset = PCamDataset(root_dir=args.data_dir, split="valid", transform=test_transform, sample=args.sample)
 
     return train_dataset, test_dataset, num_classes
+
+
+def convert_transform_to_dict(transform):
+    transform_vars = {}
+    transform_vars["name"] = transform.__class__.__name__
+
+    for var, value in transform.__dict__.items():
+        # Enums cannot be serialized to JSON
+        if var != "training" and not var.startswith("_") and not isinstance(value, Enum):
+            transform_vars[var] = value
+    return transform_vars
+
+
+def convert_dict_to_transform(transform_dict):
+    transform_args = {k: v for k, v in transform_dict.items() if k != "name"}
+    transform = getattr(transforms, transform_dict["name"])(**transform_args)
+    return transform

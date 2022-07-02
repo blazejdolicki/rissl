@@ -4,7 +4,6 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 import logging
-from torchvision import transforms
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 import os
@@ -16,7 +15,6 @@ import time
 from datasets import get_transforms, get_dataset
 import utils
 from models import get_model
-from collect_env import collect_env_info
 
 if __name__ == "__main__":
 
@@ -36,7 +34,7 @@ if __name__ == "__main__":
     utils.fix_seed(args.seed)
 
     train_transform, valid_transform = get_transforms(args)
-    args.transform = utils.add_transform_to_args(train_transform, valid_transform)
+    args.transform = utils.add_transforms_to_args(train_transform, valid_transform)
 
     utils.setup_mlflow(args)
 
@@ -57,6 +55,10 @@ if __name__ == "__main__":
     model = get_model(args.model_type, num_classes, args).to(device)
     print("Model:")
     print(model)
+
+    # check model equivariance before training
+    if args.check_model_equivariance:
+        utils.check_model_equivariance(model, valid_loader, device, num_classes)
 
     num_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
     # separate thousands with commas
@@ -289,4 +291,9 @@ if __name__ == "__main__":
 
     gpu_mem_gb = round(torch.cuda.max_memory_allocated()/10**9, 2)
     logging.info(f'Max GPU memory allocated (in GBs): {gpu_mem_gb}')
+
+    # check model equivariance after training
+    if args.check_model_equivariance:
+        utils.check_model_equivariance(model, valid_loader, device, num_classes)
+
     logging.info('Finished training')

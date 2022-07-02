@@ -1,0 +1,168 @@
+(vissl) b.dolicki@aristarchus:~/thesis/rissl$ python debug_equivariance.py --model_type e2_wideresnet_correct --dataset mnist --N 8 --train
+N rotations 8 r -1
+| Wide-Resnet 28x7 (100%)
+/home/b.dolicki/anaconda3/envs/vissl/lib/python3.7/site-packages/e2cnn/nn/modules/r2_conv/basisexpansion_singleblock.py:80: UserWarning: indexing with dtype torch.uint8 is now deprecated, please use a dtype torch.bool instead. (Triggered internally at  /opt/conda/conda-bld/pytorch_1646755953518/work/aten/src/ATen/native/IndexingUtils.h:28.)
+  full_mask[mask] = norms.to(torch.uint8)
+start building 1
+built 1
+start building 2
+built 2
+start building 3
+built 3
+Total number of parameters: 5199949
+Model:
+Wide_ResNet(
+  (conv1): R2Conv([8-Rotations: 1 representations], [8-Rotations: 5 representations], kernel_size=5, stride=1, padding=2, bias=False)
+  (layer1): SequentialModule(
+    (0): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 5 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 5 representations])
+      (conv1): R2Conv([8-Rotations: 5 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 14 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (shortcut): R2Conv([8-Rotations: 5 representations], [8-Rotations: 14 representations], kernel_size=1, stride=1, bias=False)
+    )
+    (1): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (conv1): R2Conv([8-Rotations: 14 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 14 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+    (2): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (conv1): R2Conv([8-Rotations: 14 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 14 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+    (3): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (conv1): R2Conv([8-Rotations: 14 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 14 representations], [8-Rotations: 14 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+  )
+  (layer2): SequentialModule(
+    (0): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 14 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 14 representations])
+      (conv1): R2Conv([8-Rotations: 14 representations], [8-Rotations: 28 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 28 representations], [8-Rotations: 28 representations], kernel_size=5, stride=2, padding=2, bias=False)
+      (shortcut): R2Conv([8-Rotations: 14 representations], [8-Rotations: 28 representations], kernel_size=1, stride=2, bias=False)
+    )
+    (1): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (conv1): R2Conv([8-Rotations: 28 representations], [8-Rotations: 28 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 28 representations], [8-Rotations: 28 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+    (2): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (conv1): R2Conv([8-Rotations: 28 representations], [8-Rotations: 28 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 28 representations], [8-Rotations: 28 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+    (3): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (conv1): R2Conv([8-Rotations: 28 representations], [8-Rotations: 28 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 28 representations], [8-Rotations: 28 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+  )
+  (layer3): SequentialModule(
+    (0): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 28 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 28 representations])
+      (conv1): R2Conv([8-Rotations: 28 representations], [8-Rotations: 56 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 56 representations], [8-Rotations: 56 representations], kernel_size=5, stride=2, padding=2, bias=False)
+      (shortcut): R2Conv([8-Rotations: 28 representations], [8-Rotations: 56 representations], kernel_size=1, stride=2, bias=False)
+    )
+    (1): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+      (conv1): R2Conv([8-Rotations: 56 representations], [8-Rotations: 56 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 56 representations], [8-Rotations: 56 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+    (2): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+      (conv1): R2Conv([8-Rotations: 56 representations], [8-Rotations: 56 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 56 representations], [8-Rotations: 56 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+    (3): WideBasic(
+      (bn1): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu1): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+      (conv1): R2Conv([8-Rotations: 56 representations], [8-Rotations: 56 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+      (dropout): PointwiseDropout()
+      (conv2): R2Conv([8-Rotations: 56 representations], [8-Rotations: 56 representations], kernel_size=5, stride=1, padding=2, bias=False)
+    )
+  )
+  (bn1): InnerBatchNorm([8-Rotations: 56 representations], eps=1e-05, momentum=0.9, affine=True, track_running_stats=True)
+  (mp): GroupPooling([8-Rotations: 56 representations])
+  (relu): ReLU(inplace=True, type=[8-Rotations: 56 representations])
+  (linear): Linear(in_features=56, out_features=10, bias=True)
+)
+
+##########################################################################################
+angle |       0       1       2       3       4       5       6       7       8       9
+    0 : [ 0.3242 -0.0652  0.8002  0.1212  0.3078 -0.2577  0.1141 -0.0299 -0.2614 -0.192 ]
+   45 : [ 0.2803 -0.0802  0.7293  0.1162  0.3021 -0.2413  0.0974 -0.0343 -0.2499 -0.1767]
+   90 : [ 0.3242 -0.0652  0.8002  0.1214  0.3078 -0.2577  0.1142 -0.0299 -0.2614 -0.192 ]
+  135 : [ 0.2802 -0.0802  0.7293  0.1162  0.3021 -0.2413  0.0974 -0.0343 -0.2499 -0.1767]
+  180 : [ 0.3242 -0.0652  0.8002  0.1212  0.3078 -0.2577  0.1141 -0.03   -0.2614 -0.192 ]
+  225 : [ 0.2802 -0.0801  0.7293  0.1162  0.3021 -0.2413  0.0974 -0.0343 -0.2499 -0.1767]
+  270 : [ 0.3243 -0.0652  0.8002  0.1212  0.3078 -0.2577  0.1141 -0.0299 -0.2613 -0.192 ]
+  315 : [ 0.2803 -0.0802  0.7293  0.1162  0.3022 -0.2412  0.0974 -0.0343 -0.2499 -0.1767]
+##########################################################################################
+
+/home/b.dolicki/anaconda3/envs/vissl/lib/python3.7/site-packages/torchvision/transforms/transforms.py:1293: UserWarning: The parameter 'resample' is deprecated since 0.12 and will be removed 0.14. Please use 'interpolation' instead.
+  "The parameter 'resample' is deprecated since 0.12 and will be removed 0.14. "
+  0%|                                                                                                                                                                               | 0/5 [00:00<?, ?it/s]epoch 0 | test accuracy: 45.304
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 [02:26<00:00, 29.30s/it]
+
+##########################################################################################
+angle |       0       1       2       3       4       5       6       7       8       9
+    0 : [-0.989  -0.5833 -0.4662 -1.1156 -1.6164  1.9144  6.7006 -2.0887 -1.0321  1.0429]
+   45 : [-1.096  -0.5463 -0.4543 -0.9985 -1.6301  1.7631  7.1183 -2.5637 -0.699   0.5146]
+   90 : [-0.989  -0.5833 -0.4662 -1.1156 -1.6164  1.9144  6.7006 -2.0887 -1.0322  1.0429]
+  135 : [-1.0965 -0.5467 -0.4542 -0.9982 -1.6304  1.7636  7.1177 -2.5634 -0.6989  0.5145]
+  180 : [-0.9886 -0.5831 -0.4663 -1.1158 -1.6162  1.9141  6.7008 -2.0889 -1.0322  1.0431]
+  225 : [-1.0959 -0.5465 -0.4543 -0.9988 -1.6302  1.7631  7.1182 -2.5636 -0.699   0.5148]
+  270 : [-0.989  -0.5833 -0.4662 -1.1156 -1.6163  1.9144  6.7006 -2.0887 -1.0322  1.0429]
+  315 : [-1.096  -0.5464 -0.4543 -0.9986 -1.6301  1.7631  7.1183 -2.5638 -0.6991  0.5144]
+##########################################################################################
+
+(vissl) b.dolicki@aristarchus:~/thesis/rissl$

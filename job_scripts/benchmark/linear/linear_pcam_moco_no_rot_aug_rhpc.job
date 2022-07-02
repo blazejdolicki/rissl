@@ -64,5 +64,11 @@ python tools/run_distributed_engines.py \
   config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
   config.OPTIMIZER.num_epochs=100 # based on https://github.com/facebookresearch/moco/blob/main/main_lincls.py
 
+cd $HOME/thesis/rissl
+# save file with best epoch and loss
+python tools/benchmark_summarize_metrics.py --log_dir $CHECKPOINT_DIR
+# convert best VISSL model to torchvision
+python tools/convert_best_model_to_torchvision.py --log_dir $CHECKPOINT_DIR
+
 # move slurm output from default location to logs after the job is finished
 mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

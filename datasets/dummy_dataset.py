@@ -21,8 +21,8 @@ class DummyDataset(Dataset):
     def __getitem__(self, idx):
         if self.rotation_invariant:
             img = torch.ones((self.num_channels, self.img_height, self.img_width)) * idx
-        else:
-            raise NotImplementedError
+        else: # return random images
+            img = torch.randn((self.num_channels, self.img_height, self.img_width))
 
         label = random.randint(0, self.num_classes - 1)
 

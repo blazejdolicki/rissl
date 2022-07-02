@@ -1,6 +1,5 @@
 import argparse
-from argparse import Namespace
-from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader
 import logging
@@ -20,9 +19,10 @@ from datasets.breakhis_dataset import BreakhisDataset
 from datasets.pcam_dataset import PCamDataset
 from datasets.dummy_dataset import DummyDataset
 from datasets.discrete_rotation import DiscreteRotation
-
 import utils
 from models import get_model
+
+
 
 """
 This is a very flexible script that allows evaluating the Mean Rotation Error (MRE) of 
@@ -47,46 +47,14 @@ loss, acc = evaluate_mre(args)
 """
 
 def evaluate_mre(args):
-    if args.checkpoint_path is not None:
-        # read arguments of the training job
-        train_log_dir = Path(args.checkpoint_path).parent.parent
-        with open(os.path.join(train_log_dir, "args.json")) as json_file:
-            train_args = json.load(json_file)
-            train_args = Namespace(**train_args)
-
-        # if argument not specified for evaluation, use the value from training config
-        for arg in vars(train_args):
-            if not hasattr(args, arg) or getattr(args, arg) is None:  # if arg doesn't exist or is None
-                setattr(args, arg, getattr(train_args, arg))
-    else:
-        default_random_init = {
-                               "batch_size": 512,
-                               "exp_name": "test_mre",
-                               "seed": 7,
-                               "model_type": "resnet18",
-                               }
-
-        # if argument not specified for evaluation, use the value from default config
-        default_random_init = Namespace(**default_random_init)
-        for arg in vars(default_random_init):
-            if not hasattr(args, arg) or getattr(args, arg) is None:  # if arg doesn't exist or is None
-                setattr(args, arg, getattr(default_random_init, arg))
-
+    # Our logging needs to be defined before importing libraries that set up their own logging such as get_transform()
+    # https://stackoverflow.com/questions/20240464/python-logging-file-is-not-working-when-using-logging-basicconfig
     os.makedirs(args.log_dir, exist_ok=True)
-
     utils.setup_logging(args.log_dir)
 
+    args, transform = utils.parse_args_from_checkpoint(args)
+
     utils.fix_seed(args.seed)
-
-    # here we have to set the transforms manually because reading them from saved config is not trivial to implement
-    transform = transforms.Compose([transforms.ToTensor()])
-
-    transform_list_str = [str(t) for t in transform.transforms]
-    if args.checkpoint_path is not None:
-        assert transform_list_str == args.transform["test"], \
-            "Current image transformations are different than those used for evaluation during training"
-
-
 
     utils.setup_mlflow(args)
 
@@ -107,7 +75,7 @@ def evaluate_mre(args):
         num_classes = 2
         dataset = DummyDataset(num_classes=num_classes)
 
-    logging.info(f"Train size {len(dataset)}")
+    logging.info(f"Split size {len(dataset)}")
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
@@ -115,9 +83,10 @@ def evaluate_mre(args):
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
     model = get_model(args.model_type, num_classes, args).to(device)
+
     if args.checkpoint_path is not None:
-        logging.info(f"Loading model {args.model_type} from {args.checkpoint_path}")
         # load model from checkpoint
+        logging.info(f"Loading model {args.model_type} from {args.checkpoint_path}")
         state_dict = torch.load(args.checkpoint_path)
 
         if args.multi_gpu:
@@ -127,8 +96,11 @@ def evaluate_mre(args):
     else:
         logging.info(f"Model {args.model_type} initialized from scratch.")
 
-    rotated_imgs_path = os.path.join(args.log_dir, f'rotated_imgs')
-    os.makedirs(rotated_imgs_path, exist_ok=True)
+    model.eval()
+
+    if args.save_samples > 0:
+        rotated_imgs_path = os.path.join(args.log_dir, f'rotated_imgs')
+        os.makedirs(rotated_imgs_path, exist_ok=True)
 
     N = args.mre_n
     angles = np.linspace(start=0, stop=360, num=N, endpoint=False)
@@ -137,29 +109,18 @@ def evaluate_mre(args):
     stds = []
     with torch.no_grad():
         for batch_idx, batch in enumerate(dataloader):
-            model.eval()
 
             # shape of inputs: (B, C, H, W)
             inputs, labels = batch
-
-            # take first image
-            img = np.asarray(inputs[0].permute(1, 2, 0))
-            plt.imshow(img)
-            plt.imsave(f'image.png', img)
 
             # number of unique images in the batch
             batch_size = inputs.shape[0]
 
             rotated_inputs = [rotation(inputs) for rotation in rotations]
 
-            # just for debugging: save first image in the batch, permute from (C, H, W) to (H, W, C) and save image
-            # for i, angle in enumerate(angles):
-            #     plt.imsave(f'1st image - {angle} degrees.png', np.asarray(rotated_inputs[i][3].permute(1,2,0)))
-
             # concatenated list of N tensors of shape (B, C, H, W) into a single (N*B, C, H, W) tensor
             # first B indices in the first dimension relate to all images in batch with the first rotation
             rotated_inputs = torch.cat(rotated_inputs, dim=0)
-
 
             rotated_inputs = rotated_inputs.to(device)
             labels = labels.to(device)
@@ -190,8 +151,6 @@ def evaluate_mre(args):
 
             #  reshape to (B, N, num_classes) in order to have separate dimensions for images and rotations
             probs = probs.reshape((N, batch_size, -1)).permute(1, 0, 2)
-
-
 
             # reshape labels to select the correct class probability in gather()
             label_indices = labels.unsqueeze(dim=1).unsqueeze(dim=2).repeat(1, N, 1)

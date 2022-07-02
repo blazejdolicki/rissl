@@ -11,14 +11,15 @@ LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/supervised/evaluate/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 source activate vissl
-cd $HOME/thesis/ssl-histo/
+cd $HOME/thesis/rissl/
 mkdir -p $CHECKPOINT_DIR
 
 DATA_DIR="/mnt/archive/projectdata/data_pcam"
-
+#MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2/important/12944/checkpoints/model_epoch_17.pt"
+MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2_tuning/13749/run_0/checkpoints/model_epoch_31.pt"
 python evaluate.py --dataset pcam --data_dir $DATA_DIR --split valid,test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
-                --checkpoint_path /home/b.dolicki/logs/supervised/pcam_e2/important/12944/checkpoints/model_epoch_17.pt \
+                --checkpoint_path $MODEL_WEIGHTS \
                 --batch_size=512 --num_workers=1
 
 echo "finished"

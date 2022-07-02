@@ -6,9 +6,17 @@ import numpy as np
 import random
 import mlflow
 import copy
+import torchvision.transforms.functional as F
+import yaml
+from argparse import Namespace
+from pathlib import Path
+import json
+from torchvision import transforms
 
 from models import models
 from collect_env import collect_env_info
+from datasets import convert_transform_to_dict, convert_dict_to_transform
+from models import is_equivariant
 
 
 def setup_logging(output_dir):
@@ -125,6 +133,9 @@ def read_args(parser):
                         help="Use profiling to track CPU and GPU performance and memory")
     parser.add_argument('--no_rotation_transforms', action="store_true",
                         help="If this argument is specified, don't use rotations as image transformations.")
+    parser.add_argument('--check_model_equivariance', action="store_true",
+                        help="Check if the model is equivariant, by comparing outputs "
+                             "for multiple rotations of the same image")
     # Distributed training
     parser.add_argument('--num_nodes', default=1, type=int,
                         help="Number of nodes used for training")
@@ -215,14 +226,106 @@ def convert_model_to_single_gpu(state_dict):
     return new_state_dict
 
 
-def add_transform_to_args(train_transform, test_transform):
+def add_transform_to_args(transform):
+    transform_list_str = [convert_transform_to_dict(t) for t in transform.transforms]
+    return transform_list_str
+
+
+def add_transforms_to_args(train_transform, test_transform):
     transform = {}
 
-    train_transform_list_str = [str(t) for t in train_transform.transforms]
-    transform["train"] = train_transform_list_str
+    transform["train"] = add_transform_to_args(train_transform)
+    transform["test"] = add_transform_to_args(test_transform)
 
-    test_transform_list_str = [str(t) for t in test_transform.transforms]
-    transform["test"] = test_transform_list_str
     return transform
 
 
+def check_model_equivariance(model, dataloader, device, num_classes):
+    # evaluate the `model` on 8 rotated versions of the input image `x`
+    model.eval()
+
+    # take first image
+    x = next(iter(dataloader))[0][0]
+    ys = []
+
+    logging.info("Probabilities of rotations of a single image")
+    logging.info('#'*(num_classes+1)*6)
+    header = 'angle |  ' + '  '.join(["{:6d}".format(d) for d in range(num_classes)])
+    logging.info(header)
+    with torch.no_grad():
+        for r in range(4):
+            x_transformed = F.rotate(x, r*90.).unsqueeze(dim=0) #.reshape(1, 1, img_size, img_size)
+            x_transformed = x_transformed.to(device)
+
+            y = model(x_transformed)
+            y = y.to('cpu').numpy().squeeze()
+            ys.append(y)
+
+            angle = r * 90
+            logging.info("{:5d} : {}".format(angle, y))
+
+            # check the first rotation is almost equal to all other rotations
+            assert np.allclose(ys[0], y, atol=1e-03), "The model is not equivariant."
+    logging.info('#' * (num_classes + 2) * 6)
+    logging.info("")
+
+def parse_args_from_checkpoint(args):
+
+
+    if args.checkpoint_path is not None:
+        if "supervised" in args.checkpoint_path:
+            # read arguments of the training job
+            train_log_dir = Path(args.checkpoint_path).parent.parent
+            with open(os.path.join(train_log_dir, "args.json")) as json_file:
+                train_args = json.load(json_file)
+                train_args = Namespace(**train_args)
+
+            # if argument not specified for evaluation, use the value from training config
+            for arg in vars(train_args):
+                if not hasattr(args, arg) or getattr(args, arg) is None:  # if arg doesn't exist or is None
+                    setattr(args, arg, getattr(train_args, arg))
+
+            # convert transforms from dict to list
+            transform_list = [convert_dict_to_transform(t) for t in args.transform["test"]]
+        else:
+            train_log_dir = Path(args.checkpoint_path).parent
+            with open(os.path.join(train_log_dir, "train_config.yaml")) as yaml_file:
+                train_config = yaml.load(yaml_file, Loader=yaml.FullLoader)
+
+            from vissl.data.ssl_transforms import get_transform
+
+            # convert transforms from yaml to transform.Compose to list
+            # hardcode test because it's almost always the case and a general implementation is unnecessarily complex
+            test_transform = get_transform(train_config["DATA"]["TEST"]["TRANSFORMS"])
+            transform_list = [t.transform for t in test_transform.transforms]
+
+            model_family = train_config["MODEL"]["TRUNK"]["NAME"]
+            model_args = train_config["MODEL"]["TRUNK"][(model_family + "s").upper()]
+            args.model_type = model_family + str(model_args["DEPTH"])
+
+            args.seed = train_config["SEED_VALUE"]
+
+            if is_equivariant(args.model_type):
+                for name, model_arg in model_args.items():
+                    args.__setattr__(name, model_arg)
+
+            args.multi_gpu = train_config["DISTRIBUTED"]["NUM_PROC_PER_NODE"] * train_config["DISTRIBUTED"]["NUM_NODES"] > 1
+
+    else:
+        default_random_init = {
+                               "batch_size": 512,
+                               "exp_name": "test_mre",
+                               "seed": 7,
+                               "model_type": "resnet18",
+                               }
+
+        # if argument not specified for evaluation, use the value from default config
+        default_random_init = Namespace(**default_random_init)
+        for arg in vars(default_random_init):
+            if not hasattr(args, arg) or getattr(args, arg) is None:  # if arg doesn't exist or is None
+                setattr(args, arg, getattr(default_random_init, arg))
+
+        transform_list = [transforms.ToTensor()]
+
+    transform = transforms.Compose(transform_list)
+    return args, transform

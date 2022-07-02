@@ -1,0 +1,87 @@
+(vissl) b.dolicki@aristarchus:~/thesis/rissl$ python debug_equivariance.py --model_type e2_resnet_correct --dataset mnist --N 8 --train
+args
+Namespace(N=8, dataset='mnist', model_type='e2_resnet_correct', train=True)
+/home/b.dolicki/anaconda3/envs/vissl/lib/python3.7/site-packages/e2cnn/nn/modules/r2_conv/basisexpansion_singleblock.py:80: UserWarning: indexing with dtype torch.uint8 is now deprecated, please use a dtype torch.bool instead. (Triggered internally at  /opt/conda/conda-bld/pytorch_1646755953518/work/aten/src/ATen/native/IndexingUtils.h:28.)
+  full_mask[mask] = norms.to(torch.uint8)
+Total number of learnable parameters: 2199042
+Model:
+E2ResNetLessLayers(
+  (conv1): R2Conv([8-Rotations: 1 representations], [8-Rotations: 8 representations], kernel_size=5, stride=1, padding=2, bias=False)
+  (bn1): InnerBatchNorm([8-Rotations: 8 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (relu): ReLU(inplace=True, type=[8-Rotations: 8 representations])
+  (maxpool): PointwiseMaxPool()
+  (layer1): SequentialModule(
+    (0): E2BasicBlock(
+      (conv1): R2Conv([8-Rotations: 8 representations], [8-Rotations: 8 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn1): InnerBatchNorm([8-Rotations: 8 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True, type=[8-Rotations: 8 representations])
+      (conv2): R2Conv([8-Rotations: 8 representations], [8-Rotations: 8 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 8 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 8 representations])
+    )
+    (1): E2BasicBlock(
+      (conv1): R2Conv([8-Rotations: 8 representations], [8-Rotations: 8 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn1): InnerBatchNorm([8-Rotations: 8 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True, type=[8-Rotations: 8 representations])
+      (conv2): R2Conv([8-Rotations: 8 representations], [8-Rotations: 8 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 8 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 8 representations])
+    )
+  )
+  (layer4): SequentialModule(
+    (0): E2BasicBlock(
+      (conv1): R2Conv([8-Rotations: 8 representations], [8-Rotations: 64 representations], kernel_size=5, stride=2, padding=2, bias=False)
+      (bn1): InnerBatchNorm([8-Rotations: 64 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True, type=[8-Rotations: 64 representations])
+      (conv2): R2Conv([8-Rotations: 64 representations], [8-Rotations: 64 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 64 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 64 representations])
+      (downsample): SequentialModule(
+        (0): R2Conv([8-Rotations: 8 representations], [8-Rotations: 64 representations], kernel_size=1, stride=2, bias=False)
+        (1): InnerBatchNorm([8-Rotations: 64 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): E2BasicBlock(
+      (conv1): R2Conv([8-Rotations: 64 representations], [8-Rotations: 64 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn1): InnerBatchNorm([8-Rotations: 64 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True, type=[8-Rotations: 64 representations])
+      (conv2): R2Conv([8-Rotations: 64 representations], [8-Rotations: 64 representations], kernel_size=5, stride=1, padding=2, bias=False)
+      (bn2): InnerBatchNorm([8-Rotations: 64 representations], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu2): ReLU(inplace=True, type=[8-Rotations: 64 representations])
+    )
+  )
+  (mp): GroupPooling([8-Rotations: 64 representations])
+  (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))
+  (fc): Linear(in_features=64, out_features=10, bias=True)
+)
+
+##########################################################################################
+angle |       0       1       2       3       4       5       6       7       8       9
+    0 : [ 0.3788 -0.4763 -0.4245 -0.9033 -0.3421 -0.3175  0.5229  0.038   0.5716 -0.5925]
+   45 : [ 0.3496 -0.4129 -0.3898 -0.7667 -0.3138 -0.2766  0.462   0.0427  0.4976 -0.519 ]
+   90 : [ 0.3787 -0.4763 -0.4244 -0.9033 -0.3421 -0.3174  0.5228  0.038   0.5716 -0.5925]
+  135 : [ 0.3496 -0.4127 -0.3898 -0.7668 -0.3136 -0.2765  0.4621  0.0427  0.4976 -0.5189]
+  180 : [ 0.3787 -0.4762 -0.4244 -0.9032 -0.3421 -0.3175  0.5228  0.038   0.5717 -0.5925]
+  225 : [ 0.3496 -0.4128 -0.3897 -0.7667 -0.3138 -0.2765  0.462   0.0427  0.4975 -0.5189]
+  270 : [ 0.3787 -0.4763 -0.4244 -0.9032 -0.3421 -0.3175  0.5228  0.038   0.5716 -0.5925]
+  315 : [ 0.3496 -0.4128 -0.3899 -0.7667 -0.3137 -0.2764  0.4621  0.0427  0.4976 -0.5189]
+##########################################################################################
+
+/home/b.dolicki/anaconda3/envs/vissl/lib/python3.7/site-packages/torchvision/transforms/transforms.py:1293: UserWarning: The parameter 'resample' is deprecated since 0.12 and will be removed 0.14. Please use 'interpolation' instead.
+  "The parameter 'resample' is deprecated since 0.12 and will be removed 0.14. "
+  0%|                                                                                                                                                                               | 0/5 [00:00<?, ?it/s]epoch 0 | test accuracy: 80.58999999999999
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 [00:37<00:00,  7.47s/it]
+
+##########################################################################################
+angle |       0       1       2       3       4       5       6       7       8       9
+    0 : [-1.571  -3.4569 -1.7644 -0.0858 -2.271   1.2026  1.3964 -0.8391 -1.9128 -0.5424]
+   45 : [-0.9974 -2.9664 -1.9621 -0.5069 -3.6736  1.1192  3.5413 -1.4255 -1.8328 -1.0139]
+   90 : [-1.5713 -3.4572 -1.7649 -0.0858 -2.27    1.2033  1.3966 -0.8392 -1.9128 -0.5423]
+  135 : [-0.9979 -2.9663 -1.9622 -0.506  -3.6738  1.1198  3.5414 -1.4252 -1.833  -1.0145]
+  180 : [-1.5715 -3.4568 -1.7654 -0.0859 -2.2693  1.2029  1.3968 -0.8391 -1.9129 -0.5421]
+  225 : [-0.9977 -2.9666 -1.9627 -0.5055 -3.673   1.1205  3.5415 -1.4256 -1.833  -1.0141]
+  270 : [-1.5712 -3.4562 -1.7641 -0.0859 -2.2699  1.2018  1.3965 -0.8394 -1.9123 -0.5426]
+  315 : [-0.9975 -2.9663 -1.9631 -0.5061 -3.6736  1.1198  3.5415 -1.4261 -1.833  -1.0135]
+##########################################################################################
+
+(vissl) b.dolicki@aristarchus:~/thesis/rissl$ 

@@ -47,5 +47,6 @@ for i, run in enumerate(runs):
                     "--max_lr", str(run[0]),
                     "--weight_decay", str(run[1]),
                     "--lr_scheduler_type", "StepLR",
-                    "--optimizer", str(run[2])
+                    "--optimizer", str(run[2]),
+                    "--fixparams"
                     ]+(["--no_rotation_transforms"] if args.no_rotation_transforms else []))
