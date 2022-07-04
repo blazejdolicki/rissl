@@ -34,16 +34,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", default=7,
                         type=int, help="Random seed used to sample splits to enable reproducibility")
+    parser.add_argument("--data_dir", type=str, help="Directory where the data is stored and where"
+                                                     "the output files will be store")
     args = parser.parse_args()
 
     TRAIN_RATIO = 0.7
     VALID_RATIO = 0.2
     TEST_RATIO = 0.1
 
-    DATA_PATH = "data/breakhis/BreaKHis_v1/histology_slides/breast"
-    current_dir = os.getcwd()
-    DATA_PATH = os.path.join(current_dir, DATA_PATH)
-    OUTPUT_PATH = os.path.join(current_dir, "data/breakhis")
+    DATA_PATH = "BreaKHis_v1/histology_slides/breast"
+    DATA_PATH = os.path.join(args.data_dir, DATA_PATH)
+    OUTPUT_PATH = args.data_dir
     print("DATA PATH", DATA_PATH)
 
     # set seed
