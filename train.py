@@ -92,6 +92,9 @@ if __name__ == "__main__":
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
 
         assert args.dataset == "pcam", "Learning rate scheduler hardcoded for PCam, make sure to adjust it for other datasets"
+    elif args.lr_scheduler_type == "ReduceLROnPlateau":
+        # mode="max" because lr is reduced based on validation accuracy
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max')
     else:
         raise ValueError("Incorrect type of learning rate scheduler.")
 
@@ -250,6 +253,10 @@ if __name__ == "__main__":
                 break
 
             logging.info("Finished validation")
+
+        # reduce learning rate depending on the validation accuracy
+        if args.lr_scheduler_type == "ReduceLROnPlateau":
+            scheduler.step(valid_epoch_acc)
 
     if not args.no_validation:
         mlflow.log_metric("best_valid_loss", best_valid_loss)

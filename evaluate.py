@@ -1,15 +1,10 @@
 import argparse
-from argparse import Namespace
-from pathlib import Path
 import torch
 from torch.utils.data import DataLoader
 import logging
-from torchvision import transforms
 import os
-from tqdm import tqdm
 import mlflow
 import json
-import time
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
@@ -38,6 +33,7 @@ results = evaluate(args)
 
 """
 
+
 def evaluate(args):
     # Our logging needs to be defined before importing libraries that set up their own logging such as get_transform()
     # https://stackoverflow.com/questions/20240464/python-logging-file-is-not-working-when-using-logging-basicconfig
@@ -45,6 +41,9 @@ def evaluate(args):
     utils.setup_logging(args.log_dir)
 
     args, transform = utils.parse_args_from_checkpoint(args)
+
+    print("transforms:")
+    print(transform)
 
     utils.fix_seed(args.seed)
 

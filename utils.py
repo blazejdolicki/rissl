@@ -104,7 +104,7 @@ def read_args(parser):
                         help="Type of optimizer used for training")
     parser.add_argument('--weight_decay', type=float, default=0.0,
                         help="L2 penalty of the model weights that improves regularization, switched off by default")
-    parser.add_argument('--lr_scheduler_type', type=str, choices=["StepLR", "OneCycleLR"],
+    parser.add_argument('--lr_scheduler_type', type=str, choices=["StepLR", "OneCycleLR", "ReduceLROnPlateau"],
                         help='Type of learning rate scheduler used for training.')
     parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")
     parser.add_argument('--start_lr', type=float, default=None, help="Initial learning rate at the start")
