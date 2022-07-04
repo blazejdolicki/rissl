@@ -15,9 +15,13 @@ from enum import Enum
 
 
 def get_transforms(args):
+    # define img sizes for which all feature maps are odd-sized (required for equivariance)
+    e2_img_sizes = {"breakhis": 449,
+                     "pcam": 97
+                     }
     # define img size of all datasets
     data_img_sizes = {"pcam": 96}
-    
+
     data_transforms = {
                         "_default": {
                             "train": [
@@ -52,7 +56,18 @@ def get_transforms(args):
                             ],
                             "test": [transforms.ToTensor()]
 
-                        }
+                        },
+                        "breakhis": {
+                            "train": [
+                                transforms.CenterCrop(460 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
+                                DiscreteRotation(angles=[0, 90, 180, 270]),
+                                transforms.ToTensor()
+                            ],
+                            "test": [
+                                transforms.CenterCrop(460 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
+                                transforms.ToTensor()
+                            ]
+                        },
     }
     if args.dataset not in data_transforms:
         logging.warning("The specified dataset does not have custom transforms, using default transfroms")
@@ -64,8 +79,7 @@ def get_transforms(args):
     # To preserve equivariance, we need to pick image size that ensures all feature maps are odd-sized
     # https://arxiv.org/pdf/2004.09691.pdf (Figure 2)
     if is_equivariant(args.model_type):
-        assert args.dataset=="pcam", f"Check if the size will be correct for other {args.dataset} dataset"
-        resize = transforms.Resize(data_img_sizes[args.dataset]+1)
+        resize = transforms.Resize(e2_img_sizes[args.dataset])
         train_transform_list.insert(0, resize)
         test_transform_list.insert(0, resize)
 
@@ -94,6 +108,7 @@ def get_dataset(train_transform, test_transform, args):
         train_dataset = BreakhisFoldDataset(breakhis_dir, "train", args.fold, args.train_mag, train_transform)
         test_dataset = BreakhisFoldDataset(breakhis_dir, "test", args.fold, args.test_mag, test_transform)
     elif args.dataset == "breakhis":
+        num_classes = 2
         train_dataset = BreakhisDataset(args.data_dir, "train", args.old_img_path_prefix, args.new_img_path_prefix,
                                         train_transform)
         test_dataset = BreakhisDataset(args.data_dir, "test", args.old_img_path_prefix, args.new_img_path_prefix,
