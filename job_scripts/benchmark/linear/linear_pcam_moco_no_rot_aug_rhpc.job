@@ -3,7 +3,7 @@
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
 #SBATCH --job-name=linear_pcam_moco_no_rot_aug
-#SBATCH -t 7-00:00:00
+#SBATCH -t 1-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
@@ -11,7 +11,7 @@
 CONFIG_PATH=benchmark/linear/moco/linear_moco_no_rot_aug.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco_no_rot_aug/12791/model_phase190.torch"
+MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco_no_rot_aug/12791/model_final_checkpoint_phase199.torch"
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
@@ -20,7 +20,6 @@ DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
 source activate vissl
 cd $HOME/thesis/vissl
 
-# TODO change to true after debugging
 use_scratch=true
 
 if [ "$use_scratch" = true ] ; then

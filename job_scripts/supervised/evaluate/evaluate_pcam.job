@@ -17,6 +17,10 @@ DATA_DIR="/mnt/archive/projectdata/data_pcam"
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/13922/converted_best_model.torch"
 # linear pcam non-e2 no rotations
 MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_no_rot_aug/13923/converted_best_model.torch"
+# finetune pcam non-e2 with rotations
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco/13928/converted_best_model.torch"
+# linear pcam non-e2 no rotations
+MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco_no_rot_aug/13927/converted_best_model.torch"
 
 # set checkpoint dir to be inside log dir of the log dir of the loaded model
 CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })

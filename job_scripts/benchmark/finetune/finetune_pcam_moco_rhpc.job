@@ -11,7 +11,7 @@
 CONFIG_PATH=benchmark/finetune/moco/finetune_moco.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco/12791/model_phase190.torch"
+MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco/13015/model_final_checkpoint_phase199.torch"
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
@@ -21,7 +21,6 @@ DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
 source activate vissl
 cd $HOME/thesis/vissl
 
-# TODO change to true after debugging
 use_scratch=true
 
 if [ "$use_scratch" = true ] ; then
@@ -70,6 +69,11 @@ python tools/run_distributed_engines.py \
   config.OPTIMIZER.weight_decay=0.0001 \
   config.OPTIMIZER.num_epochs=100 \
 
+cd $HOME/thesis/rissl
+# save file with best epoch and loss
+python tools/benchmark_summarize_metrics.py --log_dir $CHECKPOINT_DIR
+# convert best VISSL model to torchvision
+python tools/convert_best_model_to_torchvision.py --log_dir $CHECKPOINT_DIR
 
 # move slurm output from default location to logs after the job is finished
 mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

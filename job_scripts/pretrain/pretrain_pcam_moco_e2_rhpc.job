@@ -61,9 +61,7 @@ python3 tools/run_distributed_engines.py \
     config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
     +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-    config.OPTIMIZER.num_epochs=1 # TODO change this and learning rate scheduler back to normal after debugging
-
-
+    config.MODEL.TRUNK.E2_RESNETS.fixparams=True
 
 # move slurm output from default location to logs after the job is finished
 mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
