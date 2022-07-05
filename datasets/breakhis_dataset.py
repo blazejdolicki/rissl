@@ -22,6 +22,9 @@ class BreakhisDataset(Dataset):
         self.label2int = {"benign": 0, "malignant": 1}
         imgs_path = os.path.join(root_dir, f"{split}_images.npy")
         labels_path = os.path.join(root_dir, f"{split}_labels.npy")
+
+        logging.info(f"Images path for {split} set: {imgs_path}")
+
         if old_img_path_prefix is not None or old_img_path_prefix != "None":
             logging.info(f"Replace image path prefixes from {old_img_path_prefix} to {new_img_path_prefix}")
             self.imgs = [img.replace(old_img_path_prefix, new_img_path_prefix) for img in np.load(imgs_path)]

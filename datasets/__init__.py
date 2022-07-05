@@ -106,12 +106,12 @@ def get_dataset(train_transform, test_transform, args):
     if args.dataset == "breakhis_fold":
         breakhis_dir = os.path.join(args.data_dir, "breakhis")
         train_dataset = BreakhisFoldDataset(breakhis_dir, "train", args.fold, args.train_mag, train_transform)
-        test_dataset = BreakhisFoldDataset(breakhis_dir, "test", args.fold, args.test_mag, test_transform)
+        test_dataset = BreakhisFoldDataset(breakhis_dir, "val", args.fold, args.test_mag, test_transform)
     elif args.dataset == "breakhis":
         num_classes = 2
         train_dataset = BreakhisDataset(args.data_dir, "train", args.old_img_path_prefix, args.new_img_path_prefix,
                                         train_transform)
-        test_dataset = BreakhisDataset(args.data_dir, "test", args.old_img_path_prefix, args.new_img_path_prefix,
+        test_dataset = BreakhisDataset(args.data_dir, "val", args.old_img_path_prefix, args.new_img_path_prefix,
                                        test_transform)
     elif args.dataset == "pcam":
         num_classes = 2
