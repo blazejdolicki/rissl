@@ -21,7 +21,6 @@ source activate vissl
 cd $HOME/thesis/vissl
 
 use_scratch=true
-
 if [ "$use_scratch" = true ] ; then
 
   mkdir -p $DATA_SCRATCH_DIR
@@ -47,7 +46,6 @@ else
 fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
-
 
 python tools/run_distributed_engines.py \
   config=$CONFIG_PATH \

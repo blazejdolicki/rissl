@@ -46,7 +46,7 @@ else
 fi
 
 python hp_tuning/breakhis_tuning.py --log_dir $CHECKPOINT_DIR --old_img_path_prefix $OLD_IMG_PATH_PREFIX \
-                  --new_img_path_prefix $NEW_IMG_PATH_PREFIX --exp_name breakhis_tuning --data_dir $DATA_DIR \
+                  --new_img_path_prefix $NEW_IMG_PATH_PREFIX --exp_name breakhis_e2_tuning --data_dir $DATA_DIR \
                   --model_type e2_resnet18 --no_rotation_transforms
 
 echo "finished"

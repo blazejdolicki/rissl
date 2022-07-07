@@ -4,7 +4,7 @@
 #SBATCH --partition=batch
 #SBATCH --job-name=breakhis
 #SBATCH --gpus-per-node=1
-#SBATCH --time=05:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
@@ -44,12 +44,12 @@ else
   DATA_DIR=$DATA_HOME_DIR
 fi
 
-# TODO increase number of epochs
+# Hyperparameters from /home/b.dolicki/logs/supervised/breakhis_tuning/14091/run_22
 python train.py --dataset breakhis --data_dir $DATA_DIR --old_img_path_prefix $OLD_IMG_PATH_PREFIX \
                   --new_img_path_prefix $NEW_IMG_PATH_PREFIX --log_dir $CHECKPOINT_DIR  \
                   --mlflow_dir /home/b.dolicki/mlflow_runs --num_workers 1 --batch_size 64 \
-                  --model_type resnet18 --max_lr 0.01 --lr_scheduler_type ReduceLROnPlateau --optimizer adam \
-                  --weight_decay 0.0001 --exp_name pcam --num_epochs 1
+                  --model_type resnet18 --max_lr 0.0001 --lr_scheduler_type ReduceLROnPlateau --optimizer adam \
+                  --weight_decay 0.0001 --exp_name breakhis --num_epochs 200
 
 echo "finished"
 

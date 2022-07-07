@@ -8,8 +8,6 @@
 #SBATCH --mem=32000M
 #SBATCH --output=job_logs/slurm_output_%x_%j.out
 
-cd /project/bdolicki/data
-
 curl -O https://zenodo.org/record/1214456/files/CRC-VAL-HE-7K.zip
 unzip CRC-VAL-HE-7K.zip
 rm CRC-VAL-HE-7K.zip
