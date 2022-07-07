@@ -66,11 +66,11 @@ def evaluate(args):
 
 def evaluate_split(args, split, transform):
     if args.dataset == "breakhis_fold":
-        num_classes = 4
+        num_classes = 2
         dataset = BreakhisFoldDataset(args.data_dir, split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
-        num_classes = 4
-        dataset = BreakhisDataset(args.data_dir, split, transform)
+        num_classes = 2
+        dataset = BreakhisDataset(root_dir=args.data_dir, split=split, transform=transform)
     elif args.dataset == "pcam":
         num_classes = 2
         dataset = PCamDataset(root_dir=args.data_dir, split=split, transform=transform, sample=args.sample)
@@ -129,7 +129,7 @@ def evaluate_split(args, split, transform):
     return {"loss": epoch_loss, "acc": epoch_acc}
 
 def assert_splits(splits):
-    possible_splits = ["test", "valid"]
+    possible_splits = ["test", "val", "valid"]
     for split in splits:
         assert split in possible_splits, f"Invalid split name: {split}. Possible splits are: {possible_splits}."
 

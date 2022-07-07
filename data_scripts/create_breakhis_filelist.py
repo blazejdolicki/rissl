@@ -48,9 +48,7 @@ if __name__ == "__main__":
     print("DATA PATH", DATA_PATH)
 
     # set seed
-    # TODO: I manually checked and the sampled images are the same, but it would be neat to add a test here
     random.seed(args.seed)
-    print("Random seed:", args.seed)
 
     imgs, labels = get_filepaths_recursively(DATA_PATH)
     assert len(imgs) == len(labels), "Number of images and labels should be equal"

@@ -25,7 +25,7 @@ class BreakhisDataset(Dataset):
 
         logging.info(f"Images path for {split} set: {imgs_path}")
 
-        if old_img_path_prefix is not None or old_img_path_prefix != "None":
+        if (old_img_path_prefix is not None) and (old_img_path_prefix != "None"):
             logging.info(f"Replace image path prefixes from {old_img_path_prefix} to {new_img_path_prefix}")
             self.imgs = [img.replace(old_img_path_prefix, new_img_path_prefix) for img in np.load(imgs_path)]
         else:
