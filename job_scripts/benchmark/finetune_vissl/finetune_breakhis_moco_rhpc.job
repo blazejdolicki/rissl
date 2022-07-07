@@ -2,26 +2,25 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=finetune_pcam_moco_no_rot_aug
+#SBATCH --job-name=finetune_breakhis_moco
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/finetune/moco/finetune_moco_no_rot_aug.yaml
+CONFIG_PATH=benchmark/finetune/moco/finetune_breakhis.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco_no_rot_aug/12791/model_final_checkpoint_phase199.torch"
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune_vissl/$SLURM_JOB_NAME/$SLURM_JOB_ID
+MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco/13015/model_final_checkpoint_phase199.torch"
 
-DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
-DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
+DATA_HOME_DIR="/mnt/archive/projectdata/data_breakhis"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/breakhis"
 
 
 # might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
 source activate vissl
 cd $HOME/thesis/vissl
 
-# TODO change to true after debugging
 use_scratch=true
 
 if [ "$use_scratch" = true ] ; then
@@ -50,24 +49,30 @@ fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
 
-# Hyperparameters from /home/b.dolicki/logs/supervised/pcam_tuning/12723/run_2
+# Hyperparameters from /home/b.dolicki/logs/supervised/breakhis_tuning/14091/run_22
 python tools/run_distributed_engines.py \
   config=$CONFIG_PATH \
-  config.DATA.TRAIN.DATASET_NAMES=[pcam] \
-  config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
-  config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
-  +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train"] \
-  config.DATA.TEST.DATASET_NAMES=[pcam] \
-  config.DATA.TEST.DATA_SOURCES=[disk_folder] \
-  config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
-  +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val"] \
+  config.DATA.TRAIN.DATASET_NAMES=[breakhis] \
+  config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+  config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+  config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_images.npy"] \
+  config.DATA.TRAIN.LABEL_PATHS=["$DATA_DIR/train_labels.npy"] \
+  config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$REMOVE_IMG_PATH_PREFIX \
+  config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
+  config.DATA.TEST.DATASET_NAMES=[breakhis] \
+  config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+  config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+  config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val_images.npy"] \
+  config.DATA.TEST.LABEL_PATHS=["$DATA_DIR/val_labels.npy"] \
+  config.DATA.TEST.REMOVE_IMG_PATH_PREFIX=$REMOVE_IMG_PATH_PREFIX \
+  config.DATA.TEST.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
   config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
   config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
   config.OPTIMIZER.name=adam \
   config.OPTIMIZER.param_schedulers.lr.name=multistep \
   config.OPTIMIZER.param_schedulers.lr.milestones=[40,80] \
-  config.OPTIMIZER.param_schedulers.lr.values=[0.001,0.0001,0.00001] \
-  config.OPTIMIZER.weight_decay=0.0001 \
+  config.OPTIMIZER.param_schedulers.lr.values=[0.01,0.001,0.0001] \
+  config.OPTIMIZER.weight_decay=0.00001 \
   config.OPTIMIZER.num_epochs=100 \
 
 cd $HOME/thesis/rissl

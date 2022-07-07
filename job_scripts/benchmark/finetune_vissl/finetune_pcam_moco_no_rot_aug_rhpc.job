@@ -2,16 +2,16 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=finetune_pcam_moco_e2
+#SBATCH --job-name=finetune_pcam_moco_no_rot_aug
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/finetune/moco/finetune_moco_e2.yaml
+CONFIG_PATH=benchmark/finetune/moco/finetune_moco_no_rot_aug.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco_e2/13870/model_final_checkpoint_phase199.torch"
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune_vissl/$SLURM_JOB_NAME/$SLURM_JOB_ID
+MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco_no_rot_aug/12791/model_final_checkpoint_phase199.torch"
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
@@ -66,8 +66,8 @@ python tools/run_distributed_engines.py \
   config.OPTIMIZER.name=adam \
   config.OPTIMIZER.param_schedulers.lr.name=multistep \
   config.OPTIMIZER.param_schedulers.lr.milestones=[40,80] \
-  config.OPTIMIZER.param_schedulers.lr.values=[0.01,0.001,0.0001] \
-  config.OPTIMIZER.weight_decay=0.000001 \
+  config.OPTIMIZER.param_schedulers.lr.values=[0.001,0.0001,0.00001] \
+  config.OPTIMIZER.weight_decay=0.0001 \
   config.OPTIMIZER.num_epochs=100 \
 
 cd $HOME/thesis/rissl
