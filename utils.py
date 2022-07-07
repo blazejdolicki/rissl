@@ -124,6 +124,8 @@ def read_args(parser):
     parser.add_argument('--patience', type=int, default=20, help="Number of epochs without improvement required for early stopping")
     parser.add_argument("--log_dir", type=str, default="logs",
                         help="Directory with logs: checkpoints, parameters, metrics")
+    parser.add_argument('--checkpoint_path', type=str, required=True,
+                        help="Path to a pretrained model used for finetuning")
     parser.add_argument("--mlflow_dir", type=str, default="/project/bdolicki/mlflow_runs",
                         help="Directory with MLFlow logs")
     parser.add_argument("--save_model_every_n_epochs", type=int, default=1,
@@ -329,3 +331,9 @@ def parse_args_from_checkpoint(args):
 
     transform = transforms.Compose(transform_list)
     return args, transform
+
+
+def assert_pretrained_state_dict(missing_keys, unexpected_keys):
+    assert missing_keys == ["fc.weight", "fc.bias"], f"Missing key(s) in state_dict: {missing_keys}"
+    assert len(unexpected_keys) == 0, f"Unexpected key(s) in state_dict: {unexpected_keys}"
+

@@ -53,8 +53,25 @@ if __name__ == "__main__":
 
     # select a model with randomly initialized weights, default is resnet18 so that we can train it quickly
     model = get_model(args.model_type, num_classes, args).to(device)
+
     print("Model:")
     print(model)
+
+    if args.checkpoint_path is not None:
+        # load model from checkpoint
+        logging.info(f"Loading model {args.model_type} from {args.checkpoint_path}")
+        state_dict = torch.load(args.checkpoint_path)
+
+        if args.multi_gpu:
+            state_dict = utils.convert_model_to_single_gpu(state_dict)
+
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+        utils.assert_pretrained_state_dict(missing_keys, unexpected_keys)
+        logging.info(f"Model loaded successfully")
+    else:
+        logging.info(f"Model {args.model_type} initialized from scratch.")
+
+
 
     # check model equivariance before training
     if args.check_model_equivariance:
