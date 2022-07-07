@@ -1,0 +1,78 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p batch
+#SBATCH --gpus-per-node=1
+#SBATCH --job-name=linear_breakhis_moco
+#SBATCH -t 05:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+#SBATCH --cpus-per-task=16
+#SBATCH --exclude=eudoxus
+
+CONFIG_PATH=benchmark/linear/moco/linear_moco_breakhis.yaml
+LOGS_DIR=/home/b.dolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/$SLURM_JOB_NAME/$SLURM_JOB_ID
+MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco/13015/model_phase50.torch"
+
+
+DATA_HOME_DIR="/mnt/archive/projectdata/data_breakhis"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/breakhis"
+
+# might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
+source activate vissl
+cd $HOME/thesis/vissl
+
+use_scratch=true
+if [ "$use_scratch" = true ] ; then
+
+  mkdir -p $DATA_SCRATCH_DIR
+  start_time=$(date '+%B %V %T')
+  echo "${start_time}: Copying data from $DATA_HOME_DIR to $DATA_SCRATCH_DIR..."
+
+  # Note: If the source directory has a trailing slash, rsync will copy only the directory
+  # contents to the destination directory. When the trailing slash is omitted, rsync copies the source
+  # directory inside the destination directory.
+
+  rsync -az $DATA_HOME_DIR/ $DATA_SCRATCH_DIR # add -v option for verbose
+  end_time=$(date '+%B %V %T')
+  echo "${end_time}: Finished copying data to scratch"
+
+  OLD_IMG_PATH_PREFIX=$DATA_HOME_DIR
+  NEW_IMG_PATH_PREFIX=$DATA_SCRATCH_DIR
+  DATA_DIR=$DATA_SCRATCH_DIR
+else
+  echo "Data will not be copied to scratch"
+  OLD_IMG_PATH_PREFIX=None
+  NEW_IMG_PATH_PREFIX=None
+  DATA_DIR=$DATA_HOME_DIR
+fi
+
+export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
+
+python tools/run_distributed_engines.py \
+  config=$CONFIG_PATH \
+  config.DATA.TRAIN.DATASET_NAMES=[breakhis] \
+  config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+  config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+  config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_images.npy"] \
+  config.DATA.TRAIN.LABEL_PATHS=["$DATA_DIR/train_labels.npy"] \
+  config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$OLD_IMG_PATH_PREFIX \
+  config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
+  config.DATA.TEST.DATASET_NAMES=[breakhis] \
+  config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+  config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+  config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val_images.npy"] \
+  config.DATA.TEST.LABEL_PATHS=["$DATA_DIR/val_labels.npy"] \
+  config.DATA.TEST.REMOVE_IMG_PATH_PREFIX=$OLD_IMG_PATH_PREFIX \
+  config.DATA.TEST.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
+  config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+  config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
+  config.OPTIMIZER.num_epochs=100 # based on https://github.com/facebookresearch/moco/blob/main/main_lincls.py
+
+cd $HOME/thesis/rissl
+# save file with best epoch and loss
+python tools/benchmark_summarize_metrics.py --log_dir $CHECKPOINT_DIR
+# convert best VISSL model to torchvision
+python tools/convert_best_model_to_torchvision.py --log_dir $CHECKPOINT_DIR
+
+# move slurm output from default location to logs after the job is finished
+mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
