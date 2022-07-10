@@ -20,7 +20,6 @@ DATA_HOME_DIR="/mnt/archive/projectdata/data_breakhis"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/breakhis"
 
 use_scratch=true
-
 if [ "$use_scratch" = true ] ; then
 
   mkdir -p $DATA_SCRATCH_DIR

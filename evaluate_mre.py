@@ -63,10 +63,10 @@ def evaluate_mre(args):
         json.dump(vars(args), file, indent=4)
 
     if args.dataset == "breakhis_fold":
-        num_classes = 4
+        num_classes = 2
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
-        num_classes = 4
+        num_classes = 2
         dataset = BreakhisDataset(args.data_dir, args.split, transform)
     elif args.dataset == "pcam":
         num_classes = 2
@@ -207,3 +207,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     mre = evaluate_mre(args)
+
+    results_path = os.path.join(args.log_dir, "results.json")
+    with open(results_path, 'w') as file:
+        json.dump({f"MRE({args.mre_n})": mre}, file, indent=4)

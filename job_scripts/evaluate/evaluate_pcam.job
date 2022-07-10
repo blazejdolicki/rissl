@@ -13,6 +13,7 @@ cd $HOME/thesis/rissl/
 DATA_DIR="/mnt/archive/projectdata/data_pcam"
 # supervised pcam non-e2
 #MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam/important/12932/checkpoints/model_epoch_45.pt"
+#MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam/12932/checkpoints/best_model.pt"
 # supervised pcam e2
 #MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2/14067/checkpoints/best_model.pt"
 
@@ -24,17 +25,48 @@ DATA_DIR="/mnt/archive/projectdata/data_pcam"
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_e2/14126/converted_best_model.torch"
 
 # finetune pcam non-e2 no rotations
+# finetuned in vissl
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco_no_rot_aug/14104/converted_best_model.torch"
+# finetuned in train.py
+# seed 0
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco_no_rot_aug/14363/checkpoints/best_model.pt"
+# seed 187
+MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco_no_rot_aug/14439/checkpoints/best_model.pt"
+# seed 389
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco_no_rot_aug/14415/checkpoints/best_model.pt"
+
+
 # finetune pcam non-e2 with rotations
+# finetuned in vissl
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco/14103/converted_best_model.torch"
+# finetuned in train.py
+# seed 7
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco/14244/checkpoints/best_model.pt"
+# seed 187
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco/14414/checkpoints/best_model.pt"
+# seed 389
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco/14301/checkpoints/best_model.pt"
+
+
 # finetune pcam e2
-MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco_e2/14105/converted_best_model.torch"
+# finetuned in vissl, randomresizedcrop in training transforms
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune_vissl/finetune_pcam_moco_e2/14071/converted_best_model.torch"
+# finetuned in vissl
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_moco_e2/14105/converted_best_model.torch"
+# finetuned in train.py
+# seed 0
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_e2_moco/14364/checkpoints/best_model.pt"
+# seed 187
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_e2_moco/14421/checkpoints/best_model.pt"
+# seed 389
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_pcam_e2_moco/14416/checkpoints/best_model.pt"
+
 
 # set checkpoint dir to be inside log dir of the log dir of the loaded model
 CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })
 unset CHECKPOINT_DIR[-1]
 # go one parent dir higher if the model is trained from scratch (get out of `checkpoints` folder)
-if [[ $MODEL_WEIGHTS == *"supervised"* ]]; then
+if [[ $MODEL_WEIGHTS == *"supervised"* ]] || [[ $MODEL_WEIGHTS == *"finetune"* ]]; then
   unset CHECKPOINT_DIR[-1]
 fi
 CHECKPOINT_DIR=/$(IFS=/ ; echo "${CHECKPOINT_DIR[*]}")/evaluate/$SLURM_JOB_ID
@@ -43,7 +75,7 @@ mkdir -p $CHECKPOINT_DIR
 python evaluate.py --dataset pcam --data_dir $DATA_DIR --split valid,test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
                 --checkpoint_path $MODEL_WEIGHTS \
-                --batch_size=512 --num_workers=1
+                --batch_size=128 --num_workers=1
 
 echo "finished"
 

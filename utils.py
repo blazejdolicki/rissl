@@ -124,7 +124,7 @@ def read_args(parser):
     parser.add_argument('--patience', type=int, default=20, help="Number of epochs without improvement required for early stopping")
     parser.add_argument("--log_dir", type=str, default="logs",
                         help="Directory with logs: checkpoints, parameters, metrics")
-    parser.add_argument('--checkpoint_path', type=str, required=True,
+    parser.add_argument('--checkpoint_path', type=str, required=False,
                         help="Path to a pretrained model used for finetuning")
     parser.add_argument("--mlflow_dir", type=str, default="/project/bdolicki/mlflow_runs",
                         help="Directory with MLFlow logs")
@@ -275,7 +275,7 @@ def parse_args_from_checkpoint(args):
 
 
     if args.checkpoint_path is not None:
-        if "supervised" in args.checkpoint_path:
+        if ("supervised" in args.checkpoint_path) or ("finetune" in args.checkpoint_path):
             # read arguments of the training job
             train_log_dir = Path(args.checkpoint_path).parent.parent
             with open(os.path.join(train_log_dir, "args.json")) as json_file:

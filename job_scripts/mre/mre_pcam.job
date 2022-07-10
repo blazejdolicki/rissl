@@ -28,8 +28,16 @@ DATA_DIR="/mnt/archive/projectdata/data_pcam"
 # linear pcam non-e2 with rotations
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/14125/converted_best_model.torch"
 # linear pcam e2
-MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_e2/14126/converted_best_model.torch"
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_e2/14126/converted_best_model.torch"
 
+# linear non-e2 no rot aug
+MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_no_rot_aug/14188/converted_best_model.torch"
+# linear non-e2 with rot aug
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco/14176/converted_best_model.torch"
+# linear e2
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2/14189/converted_best_model.torch"
+
+MRE_N=4
 
 # set checkpoint dir to be inside log dir of the log dir of the loaded model
 CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })
@@ -38,13 +46,13 @@ unset CHECKPOINT_DIR[-1]
 if [[ $MODEL_WEIGHTS == *"supervised"* ]]; then
   unset CHECKPOINT_DIR[-1]
 fi
-CHECKPOINT_DIR=/$(IFS=/ ; echo "${CHECKPOINT_DIR[*]}")/mre/$SLURM_JOB_ID
+CHECKPOINT_DIR=/$(IFS=/ ; echo "${CHECKPOINT_DIR[*]}")/mre/mre_${MRE_N}/$SLURM_JOB_ID
 mkdir -p $CHECKPOINT_DIR
 
 python evaluate_mre.py --dataset pcam --data_dir $DATA_DIR --split test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
                 --checkpoint_path $MODEL_WEIGHTS \
-                --batch_size=64 --num_workers=1 --exp_name mre_pcam --mre_n 16
+                --batch_size=64 --num_workers=1 --exp_name mre_pcam --mre_n $MRE_N
 
 echo "finished"
 
