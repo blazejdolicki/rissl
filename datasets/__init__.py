@@ -7,6 +7,7 @@ from enum import Enum
 from datasets.pcam_dataset import PCamDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
+from datasets.nct_dataset import NCTDataset
 from datasets.discrete_rotation import DiscreteRotation
 from models import is_equivariant
 from enum import Enum
@@ -17,26 +18,32 @@ from enum import Enum
 def get_transforms(args):
     # define img sizes for which all feature maps are odd-sized (required for equivariance)
     e2_img_sizes = {"breakhis": 449,
-                     "pcam": 97
-                     }
+                    "nct": 225,
+                    "pcam": 97
+                    }
+
     # define img size of all datasets
     data_img_sizes = {"pcam": 96}
 
     data_transforms = {
-                        "_default": {
+                        "breakhis": {
                             "train": [
-                                transforms.Resize(256),
-                                transforms.CenterCrop(224),
-                                transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.485, 0.456, 0.406], # statistics from ImageNet
-                                                     std=[0.229, 0.224, 0.225])
+                                transforms.CenterCrop(460 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
+                                DiscreteRotation(angles=[0, 90, 180, 270]),
+                                transforms.ToTensor()
                             ],
                             "test": [
-                                transforms.Resize(256),
-                                transforms.CenterCrop(224),
-                                transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.485, 0.456, 0.406], # statistics from ImageNet
-                                                     std=[0.229, 0.224, 0.225])
+                                transforms.CenterCrop(460 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
+                                transforms.ToTensor()
+                            ]
+                        },
+                        "nct": {
+                            "train": [
+                                DiscreteRotation(angles=[0, 90, 180, 270]),
+                                transforms.ToTensor()
+                            ],
+                            "test": [
+                                transforms.ToTensor()
                             ]
                         },
                         "pcam": {
@@ -56,22 +63,9 @@ def get_transforms(args):
                             ],
                             "test": [transforms.ToTensor()]
 
-                        },
-                        "breakhis": {
-                            "train": [
-                                transforms.CenterCrop(460 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
-                                DiscreteRotation(angles=[0, 90, 180, 270]),
-                                transforms.ToTensor()
-                            ],
-                            "test": [
-                                transforms.CenterCrop(460 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
-                                transforms.ToTensor()
-                            ]
-                        },
+                        }
     }
-    if args.dataset not in data_transforms:
-        logging.warning("The specified dataset does not have custom transforms, using default transfroms")
-        args.dataset = "_default"
+    assert args.dataset in data_transforms, f"The specified dataset({args.dataset}) does not have custom transforms"
 
     train_transform_list = data_transforms[args.dataset]["train"]
     test_transform_list = data_transforms[args.dataset]["test"]
@@ -101,7 +95,7 @@ def remove_rotation_transforms(transform_list):
 
 def get_dataset(train_transform, test_transform, args):
     if args.sample is not None and args.dataset != "pcam":
-        raise NotImplementedError("Currently sampling is only implement for PCam")
+        raise NotImplementedError("Currently sampling is only implemented for PCam")
 
     if args.dataset == "breakhis_fold":
         breakhis_dir = os.path.join(args.data_dir, "breakhis")
@@ -112,6 +106,12 @@ def get_dataset(train_transform, test_transform, args):
         train_dataset = BreakhisDataset(args.data_dir, "train", args.old_img_path_prefix, args.new_img_path_prefix,
                                         train_transform)
         test_dataset = BreakhisDataset(args.data_dir, "val", args.old_img_path_prefix, args.new_img_path_prefix,
+                                       test_transform)
+    elif args.dataset == "nct":
+        num_classes = 9
+        train_dataset = NCTDataset(args.data_dir, "train", args.old_img_path_prefix, args.new_img_path_prefix,
+                                        train_transform)
+        test_dataset = NCTDataset(args.data_dir, "valid", args.old_img_path_prefix, args.new_img_path_prefix,
                                        test_transform)
     elif args.dataset == "pcam":
         num_classes = 2
