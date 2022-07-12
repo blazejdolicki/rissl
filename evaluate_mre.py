@@ -16,6 +16,7 @@ import torch.nn.functional as F
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
+from datasets.nct_dataset import NCTDataset
 from datasets.pcam_dataset import PCamDataset
 from datasets.dummy_dataset import DummyDataset
 from datasets.discrete_rotation import DiscreteRotation
@@ -67,7 +68,10 @@ def evaluate_mre(args):
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
         num_classes = 2
-        dataset = BreakhisDataset(args.data_dir, args.split, transform)
+        dataset = BreakhisDataset(root_dir=args.data_dir, split=args.split, transform=transform)
+    elif args.dataset == "nct":
+        num_classes = 9
+        dataset = NCTDataset(root_dir=args.data_dir, split=split, transform=transform)
     elif args.dataset == "pcam":
         num_classes = 2
         dataset = PCamDataset(root_dir=args.data_dir, split=args.split, transform=transform, sample=args.sample)

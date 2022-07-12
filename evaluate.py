@@ -8,6 +8,7 @@ import json
 
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
+from datasets.nct_dataset import NCTDataset
 from datasets.pcam_dataset import PCamDataset
 import utils
 from models import get_model
@@ -71,9 +72,14 @@ def evaluate_split(args, split, transform):
     elif args.dataset == "breakhis":
         num_classes = 2
         dataset = BreakhisDataset(root_dir=args.data_dir, split=split, transform=transform)
+    elif args.dataset == "nct":
+        num_classes = 9
+        dataset = NCTDataset(root_dir=args.data_dir, split=split, transform=transform)
     elif args.dataset == "pcam":
         num_classes = 2
         dataset = PCamDataset(root_dir=args.data_dir, split=split, transform=transform, sample=args.sample)
+    else:
+        raise KeyError(f"Dataset {args.dataset} not available.")
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
