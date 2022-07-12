@@ -48,7 +48,7 @@ echo $CHECKPOINT_DIR
 python evaluate.py --dataset breakhis --data_dir $DATA_DIR --split val,test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
                 --checkpoint_path $MODEL_WEIGHTS \
-                --batch_size=64 --num_workers=1
+                --batch_size=512 --num_workers=1
 
 echo "finished"
 
