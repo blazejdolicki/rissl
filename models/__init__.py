@@ -45,7 +45,8 @@ def get_model(model_type, num_classes, args):
                             "restrict": args.restrict,
                             "flip": args.flip,
                             "fixparams": args.fixparams,
-                            "deltaorth": args.deltaorth}
+                            "deltaorth": args.deltaorth,
+                            "last_hid_dims": args.last_hid_dims}
         model_args = {**model_args, **equivariant_args}
 
     return models[model_type](**model_args)
