@@ -48,7 +48,6 @@ fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
 
-# TODO increase number of epochs
 python3 tools/run_distributed_engines.py \
     hydra.verbose=true \
     config=$CONFIG_PATH\

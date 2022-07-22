@@ -169,8 +169,8 @@ def evaluate_mre(args):
 
     mre = np.mean(stds)
 
-    logging.info(f"MRE({N}): \t{mre}")
-    mlflow.log_metric(f"MRE_{N}", mre)
+    logging.info(f"mre_{N}: \t{mre}")
+    mlflow.log_metric(f"mre_{N}", mre)
 
     mlflow.end_run()
 
@@ -214,4 +214,4 @@ if __name__ == "__main__":
 
     results_path = os.path.join(args.log_dir, "results.json")
     with open(results_path, 'w') as file:
-        json.dump({f"MRE({args.mre_n})": mre}, file, indent=4)
+        json.dump({f"mre_{args.mre_n}": mre}, file, indent=4)

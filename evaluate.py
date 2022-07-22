@@ -166,6 +166,8 @@ if __name__ == "__main__":
     parser.add_argument('--sample', type=float, default=None,
                         help='A fraction or number of examples that will be subsampled from the full dataset. '
                              'Useful for quick debugging and experiments with low data regimes.')
+    parser.add_argument('--last_hid_dims', type=int, default=-1,
+                        help='Dimensionality of the last hidden activations for e2')
 
     args = parser.parse_args()
 

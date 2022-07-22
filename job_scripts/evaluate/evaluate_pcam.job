@@ -25,12 +25,16 @@ DATA_DIR="/mnt/archive/projectdata/data_pcam"
 # seed: 187
 #MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2/14449/checkpoints/best_model.pt"
 # seed: 389
-MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2/14450/checkpoints/best_model.pt"
+#MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2/14450/checkpoints/best_model.pt"
 
 # linear pcam non-e2 no rotations
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_no_rot_aug/14124/converted_best_model.torch"
 # linear pcam non-e2 with rotations
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/14125/converted_best_model.torch"
+# seed: 7
+MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/14641/seed_7/converted_best_model.torch"
+# seed: 187
+
 # linear pcam e2
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_e2/14126/converted_best_model.torch"
 

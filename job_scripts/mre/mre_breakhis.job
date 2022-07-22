@@ -6,7 +6,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --time=10:15:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
-
+#SBATCH --exclude=eudoxus
 
 # Note: Given that when computing MRE the actual batch size is N times larger than the one specified
 # you might have to decrease it in order to fit in memory, especially for equivariant model or large N
@@ -24,7 +24,7 @@ DATA_DIR="/mnt/archive/projectdata/data_breakhis"
 # linear e2 breakhis
 MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2/14189/converted_best_model.torch"
 
-MRE_N=4
+MRE_N=16
 
 # set checkpoint dir to be inside log dir of the log dir of the loaded model
 CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })
@@ -39,7 +39,7 @@ mkdir -p $CHECKPOINT_DIR
 python evaluate_mre.py --dataset breakhis --data_dir $DATA_DIR --split test --log_dir $CHECKPOINT_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
                 --checkpoint_path $MODEL_WEIGHTS \
-                --batch_size=64 --num_workers=1 --exp_name mre_breakhis --mre_n $MRE_N
+                --batch_size=32 --num_workers=1 --exp_name mre_breakhis --mre_n $MRE_N
 
 echo "finished"
 

@@ -19,9 +19,7 @@ DATA_SCRATCH_DIR="$SCRATCH"/"data/nct"
 source activate vissl
 cd $HOME/thesis/vissl
 
-# TODO change to true after debugging
 use_scratch=true
-
 if [ "$use_scratch" = true ] ; then
 
   mkdir -p $DATA_SCRATCH_DIR

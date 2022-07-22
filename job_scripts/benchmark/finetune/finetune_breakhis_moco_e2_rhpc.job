@@ -52,8 +52,8 @@ for seed in ${SEEDS[@]}; do
   python train.py --dataset breakhis --data_dir $DATA_DIR --old_img_path_prefix $OLD_IMG_PATH_PREFIX \
                     --new_img_path_prefix $NEW_IMG_PATH_PREFIX --log_dir $SEED_DIR  \
                     --mlflow_dir /home/b.dolicki/mlflow_runs --num_workers 1 --batch_size 64 \
-                    --model_type e2_resnet18 --max_lr 0.01 --lr_scheduler_type ReduceLROnPlateau --optimizer adam \
-                    --weight_decay 0.00001 --exp_name finetune_breakhis_e2 --num_epochs 200 \
+                    --model_type e2_resnet18 --max_lr 0.0001 --lr_scheduler_type ReduceLROnPlateau --optimizer adam \
+                    --weight_decay 0.00001 --exp_name finetune_breakhis_e2 --num_epochs 100 \
                     --no_rotation_transforms --fixparams --checkpoint_path $PRETRAINED_WEIGHTS  --seed $seed
 
   FINETUNED_WEIGHTS=$SEED_DIR/checkpoints/best_model.pt

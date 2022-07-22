@@ -14,12 +14,15 @@ import numpy as np
 # folders = ["/home/b.dolicki/logs/supervised/breakhis_e2/14459/seed_187",
 #             "/home/b.dolicki/logs/supervised/breakhis_e2/14459/seed_7",
 #             "/home/b.dolicki/logs/supervised/breakhis_e2/14459/seed_389"]
-folders = ["/home/b.dolicki/logs/supervised/pcam/12932",
-           "/home/b.dolicki/logs/supervised/pcam/14447",
-           "/home/b.dolicki/logs/supervised/pcam/14448"]
-folders = ["/home/b.dolicki/logs/supervised/pcam_e2/14067",
-           "/home/b.dolicki/logs/supervised/pcam_e2/14449",
-           "/home/b.dolicki/logs/supervised/pcam_e2/14450"]
+# folders = ["/home/b.dolicki/logs/supervised/pcam/12932",
+#            "/home/b.dolicki/logs/supervised/pcam/14447",
+#            "/home/b.dolicki/logs/supervised/pcam/14448"]
+# folders = ["/home/b.dolicki/logs/supervised/pcam_e2/14067",
+#            "/home/b.dolicki/logs/supervised/pcam_e2/14449",
+#            "/home/b.dolicki/logs/supervised/pcam_e2/14450"]
+folders = ["/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/14641/seed_7",
+           "/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/14641/seed_187",
+           "/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/14641/seed_389"]
 
 
 avg_results = {}

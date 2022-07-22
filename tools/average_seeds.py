@@ -29,21 +29,29 @@ for seed_folder in os.listdir(args.log_dir):
 
     mre_path = os.path.join(seed_dir, "mre")
     if os.path.exists(mre_path):
-        # TODO remember there might be MRE(N) for multiple N
-        first_mre_child = next(mre_path.iterdir())
-        assert next(first_mre_child.iterdir()) is None, "There should be only one child in directory"
-        mre_path = first_mre_child / "results.json"
+        mres = os.listdir(mre_path)
+        for mre_n in os.listdir(mre_path):
+            mre_n_path = os.path.join(mre_path, mre_n, job_id, "results.json")
 
-        with open(mre_path) as json_file:
-            results = json.load(json_file)
+            with open(mre_n_path) as json_file:
+                results = json.load(json_file)
 
-        for split in results:
-            avg_results[split]["mre"].append(results[split]["mre"])
+            split = "test"
+            if mre_n+"s" not in avg_results[split]:
+                avg_results[split][mre_n+"s"] = []
+            avg_results[split][mre_n+"s"].append(results[mre_n])
 
 
 for split in avg_results:
     avg_results[split]["avg_acc"] = np.mean(avg_results[split]["accs"])
     avg_results[split]["std_acc"] = np.std(avg_results[split]["accs"])
+
+if os.path.exists(mre_path):
+    for mre_n in mres:
+        avg_results["test"]["avg_"+mre_n] = np.mean(avg_results["test"][mre_n+"s"])
+        avg_results["test"]["std_"+mre_n] = np.std(avg_results["test"][mre_n+"s"])
+
+
 
 with open(output_path, 'w') as file:
     json.dump(avg_results, file, indent=4)

@@ -31,13 +31,13 @@ DATA_DIR="/mnt/archive/projectdata/data_pcam"
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_e2/14126/converted_best_model.torch"
 
 # linear non-e2 no rot aug
-MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_no_rot_aug/14188/converted_best_model.torch"
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_no_rot_aug/14188/converted_best_model.torch"
 # linear non-e2 with rot aug
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco/14176/converted_best_model.torch"
 # linear e2
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2/14189/converted_best_model.torch"
 
-MRE_N=4
+MRE_N=16
 
 # set checkpoint dir to be inside log dir of the log dir of the loaded model
 CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })
