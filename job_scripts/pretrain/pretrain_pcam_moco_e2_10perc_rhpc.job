@@ -7,17 +7,15 @@
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 
-
 CONFIG_PATH=pretrain/moco/pretrain_moco_e2.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
+CHECKPOINT_DIR=$LOGS_DIR/pretrain/10perc/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
 
 NUM_EPOCHS=2000
 last_epoch=$((NUM_EPOCHS-1))
-
 
 # might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
 source activate vissl
@@ -50,21 +48,19 @@ fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
 
-# TODO increase number of epochs
 python3 tools/run_distributed_engines.py \
     hydra.verbose=true \
     config=$CONFIG_PATH\
     config.DATA.TRAIN.DATASET_NAMES=[pcam] \
     config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
     config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_sample_0.1_images.npy"] \
-    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
     config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$OLD_IMG_PATH_PREFIX \
     config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
     config.MODEL.TRUNK.E2_RESNETS.fixparams=True \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
     config.OPTIMIZER.num_epochs=$NUM_EPOCHS \
     config.OPTIMIZER.param_schedulers.lr.milestones=[1200,1600] \
     config.CHECKPOINT.CHECKPOINT_FREQUENCY=100
-
 
 cd $HOME/thesis/rissl/tools
 
