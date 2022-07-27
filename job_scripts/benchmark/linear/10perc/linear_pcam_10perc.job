@@ -2,16 +2,16 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=linear_pcam_moco_e2_1perc
-#SBATCH -t 1-00:00:00
+#SBATCH --job-name=linear_pcam_10perc
+#SBATCH -t 2-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
-## SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/linear/moco/linear_moco_e2.yaml
+
+CONFIG_PATH=benchmark/linear/moco/linear_moco.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/1perc/$SLURM_JOB_NAME/$SLURM_JOB_ID
-PRETRAINED_WEIGHTS="/home/b.dolicki/logs/pretrain/1perc/pretrain_pcam_moco_e2/14761/model_final_checkpoint_phase19999.torch"
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/10perc/$SLURM_JOB_NAME/$SLURM_JOB_ID
+PRETRAINED_WEIGHTS="/home/b.dolicki/logs/pretrain/10perc/pretrain_pcam_moco/14915/model_final_checkpoint_phase1999.torch"
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
@@ -79,6 +79,7 @@ for seed in ${SEEDS[@]}; do
   python evaluate.py --dataset pcam --data_dir $DATA_HOME_H5_DIR --split valid,test --log_dir $EVAL_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
                 --checkpoint_path $LINEAR_WEIGHTS --batch_size=512 --num_workers=1
+
 done
 
 python tools/average_seeds.py --log_dir $CHECKPOINT_DIR

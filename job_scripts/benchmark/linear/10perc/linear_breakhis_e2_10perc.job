@@ -2,20 +2,19 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p batch
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=linear_pcam_moco_e2_1perc
-#SBATCH -t 1-00:00:00
+#SBATCH --job-name=linear_breakhis_moco_e2_10perc
+#SBATCH -t 10:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
-## SBATCH --exclude=eudoxus
+#SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/linear/moco/linear_moco_e2.yaml
+CONFIG_PATH=benchmark/linear/moco/linear_moco_e2_breakhis.yaml
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/1perc/$SLURM_JOB_NAME/$SLURM_JOB_ID
-PRETRAINED_WEIGHTS="/home/b.dolicki/logs/pretrain/1perc/pretrain_pcam_moco_e2/14761/model_final_checkpoint_phase19999.torch"
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/10perc/$SLURM_JOB_NAME/$SLURM_JOB_ID
+PRETRAINED_WEIGHTS="/home/b.dolicki/logs/pretrain/10perc/pretrain_pcam_moco_e2/14916/model_final_checkpoint_phase1999.torch"
 
-DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
-DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
-DATA_HOME_H5_DIR="/mnt/archive/projectdata/data_pcam"
+DATA_HOME_DIR="/mnt/archive/projectdata/data_breakhis"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/breakhis"
 
 # might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
 source activate vissl
@@ -54,14 +53,20 @@ for seed in ${SEEDS[@]}; do
   SEED_DIR=$CHECKPOINT_DIR/seed_$seed
   python tools/run_distributed_engines.py \
     config=$CONFIG_PATH \
-    config.DATA.TRAIN.DATASET_NAMES=[pcam] \
-    config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
-    config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
-    +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train"] \
-    config.DATA.TEST.DATASET_NAMES=[pcam] \
-    config.DATA.TEST.DATA_SOURCES=[disk_folder] \
-    config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
-    +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val"] \
+    config.DATA.TRAIN.DATASET_NAMES=[breakhis] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_images.npy"] \
+    config.DATA.TRAIN.LABEL_PATHS=["$DATA_DIR/train_labels.npy"] \
+    config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$OLD_IMG_PATH_PREFIX \
+    config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
+    config.DATA.TEST.DATASET_NAMES=[breakhis] \
+    config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val_images.npy"] \
+    config.DATA.TEST.LABEL_PATHS=["$DATA_DIR/val_labels.npy"] \
+    config.DATA.TEST.REMOVE_IMG_PATH_PREFIX=$OLD_IMG_PATH_PREFIX \
+    config.DATA.TEST.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
     config.CHECKPOINT.DIR=$SEED_DIR \
     config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$PRETRAINED_WEIGHTS \
     config.OPTIMIZER.num_epochs=100 \
@@ -76,9 +81,10 @@ for seed in ${SEEDS[@]}; do
 
   LINEAR_WEIGHTS=$SEED_DIR/converted_best_model.torch
   EVAL_DIR=$SEED_DIR/evaluate/$SLURM_JOB_ID
-  python evaluate.py --dataset pcam --data_dir $DATA_HOME_H5_DIR --split valid,test --log_dir $EVAL_DIR \
+  python evaluate.py --dataset breakhis --data_dir $DATA_DIR --split val,test --log_dir $EVAL_DIR \
                 --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
-                --checkpoint_path $LINEAR_WEIGHTS --batch_size=512 --num_workers=1
+                --checkpoint_path $LINEAR_WEIGHTS --batch_size=128 --num_workers=1
+
 done
 
 python tools/average_seeds.py --log_dir $CHECKPOINT_DIR

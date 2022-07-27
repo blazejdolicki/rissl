@@ -2,15 +2,15 @@
 
 #SBATCH -N 1 # number of nodes
 #SBATCH --partition=batch
-#SBATCH --job-name=nct
+#SBATCH --job-name=finetune_nct_e2_moco
 #SBATCH --gpus-per-node=1
-#SBATCH --time=20:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
 LOGS_DIR=/home/b.dolicki/logs
-CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 source activate vissl
 cd $HOME/thesis/rissl/
@@ -18,6 +18,8 @@ mkdir -p $CHECKPOINT_DIR
 
 DATA_HOME_DIR="/mnt/archive/projectdata/data_nct"
 DATA_SCRATCH_DIR="$SCRATCH"/"data/nct"
+PRETRAINED_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco_e2/13870/converted_last_model.torch"
+
 use_scratch=true
 if [ "$use_scratch" = true ] ; then
 
@@ -46,18 +48,19 @@ fi
 SEEDS=(7 187 389)
 for seed in ${SEEDS[@]}; do
   SEED_DIR=$CHECKPOINT_DIR/seed_$seed
-  # Hyperparameters from /home/b.dolicki/logs/supervised/nct_tuning/14298/run_2
+  # Hyperparameters from /home/b.dolicki/logs/supervised/nct_tuning_e2/14367/run_2
   python train.py --dataset nct --data_dir $DATA_DIR --old_img_path_prefix $OLD_IMG_PATH_PREFIX \
                     --new_img_path_prefix $NEW_IMG_PATH_PREFIX --log_dir $SEED_DIR  \
                     --mlflow_dir /home/b.dolicki/mlflow_runs --num_workers 1 --batch_size 512 \
-                    --model_type resnet18 --max_lr 0.001 --lr_scheduler_type ReduceLROnPlateau --optimizer adam \
-                    --weight_decay 0.0001 --exp_name nct --num_epochs 100 --seed $seed
+                    --model_type e2_resnet18 --max_lr 0.001 --lr_scheduler_type ReduceLROnPlateau --optimizer adam \
+                    --weight_decay 0.0001 --exp_name finetune_nct_e2 --num_epochs 100 \
+                    --no_rotation_transforms --fixparams --checkpoint_path $PRETRAINED_WEIGHTS --seed $seed
 
-  MODEL_WEIGHTS=$SEED_DIR/checkpoints/best_model.pt
+  FINETUNED_WEIGHTS=$SEED_DIR/checkpoints/best_model.pt
   EVAL_DIR=$SEED_DIR/evaluate/$SLURM_JOB_ID
   python evaluate.py --dataset nct --data_dir $DATA_DIR --split valid,test --log_dir $EVAL_DIR \
-                     --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
-                     --checkpoint_path $MODEL_WEIGHTS --batch_size=512 --num_workers=1
+                --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
+                --checkpoint_path $FINETUNED_WEIGHTS --batch_size=512 --num_workers=1
 
 done
 
