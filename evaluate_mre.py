@@ -71,7 +71,7 @@ def evaluate_mre(args):
         dataset = BreakhisDataset(root_dir=args.data_dir, split=args.split, transform=transform)
     elif args.dataset == "nct":
         num_classes = 9
-        dataset = NCTDataset(root_dir=args.data_dir, split=split, transform=transform)
+        dataset = NCTDataset(root_dir=args.data_dir, split=args.split, transform=transform)
     elif args.dataset == "pcam":
         num_classes = 2
         dataset = PCamDataset(root_dir=args.data_dir, split=args.split, transform=transform, sample=args.sample)

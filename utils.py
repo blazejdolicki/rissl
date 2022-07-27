@@ -165,11 +165,14 @@ def read_args(parser):
     parser.set_defaults(fixparams=False)
     parser.add_argument('--deltaorth', dest="deltaorth", action="store_true",
                         help='Use delta orthogonal initialization in conv layers')
+    parser.set_defaults(deltaorth=False)
     # DenseNet
     parser.add_argument('--growth_rate', type=int)
     parser.add_argument('--num_init_features', type=int)
+    parser.add_argument('--last_hid_dims', type=int, default=-1,
+                        help='Dimensionality of the last hidden activations for e2')
 
-    parser.set_defaults(deltaorth=False)
+
     args = parser.parse_args()
     return args
 

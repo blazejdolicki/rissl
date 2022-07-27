@@ -96,6 +96,8 @@ def evaluate_split(args, split, transform):
         state_dict = utils.convert_model_to_single_gpu(state_dict)
 
     model.load_state_dict(state_dict)
+    logging.info(f"Model loaded successfully")
+
     model.eval()
 
     criterion = torch.nn.CrossEntropyLoss()
