@@ -5,6 +5,7 @@ import os
 from enum import Enum
 
 from datasets.pcam_dataset import PCamDataset
+from datasets.bach_dataset import BachDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.nct_dataset import NCTDataset
@@ -17,7 +18,8 @@ from enum import Enum
 
 def get_transforms(args):
     # define img sizes for which all feature maps are odd-sized (required for equivariance)
-    e2_img_sizes = {"breakhis": 449,
+    e2_img_sizes = {"bach": 449,
+                    "breakhis": 449,
                     "nct": 225,
                     "pcam": 97
                     }
@@ -26,6 +28,19 @@ def get_transforms(args):
     data_img_sizes = {"pcam": 96}
 
     data_transforms = {
+                        "bach": {
+                            "train": [
+                                transforms.Resize(512),
+                                transforms.CenterCrop(512 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
+                                DiscreteRotation(angles=[0, 90, 180, 270]),
+                                transforms.ToTensor()
+                            ],
+                            "test": [
+                                transforms.Resize(512),
+                                transforms.CenterCrop(512 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
+                                transforms.ToTensor()
+                            ]
+                        },
                         "breakhis": {
                             "train": [
                                 transforms.CenterCrop(460 if not is_equivariant(args.model_type) else e2_img_sizes["breakhis"]),
@@ -72,7 +87,7 @@ def get_transforms(args):
 
     # To preserve equivariance, we need to pick image size that ensures all feature maps are odd-sized
     # https://arxiv.org/pdf/2004.09691.pdf (Figure 2)
-    if is_equivariant(args.model_type):
+    if is_equivariant(args.model_type) and args.dataset != "bach":
         resize = transforms.Resize(e2_img_sizes[args.dataset])
         train_transform_list.insert(0, resize)
         test_transform_list.insert(0, resize)
@@ -93,11 +108,22 @@ def remove_rotation_transforms(transform_list):
         if isinstance(t, DiscreteRotation):
             transform_list.remove(t)
 
+
 def get_dataset(train_transform, test_transform, args):
     if args.sample is not None and args.dataset != "pcam":
         raise NotImplementedError("Currently sampling is only implemented for PCam")
 
-    if args.dataset == "breakhis_fold":
+    if args.dataset == "bach":
+        num_classes = 4
+        print("args.fold", args.fold)
+        train_dataset = BachDataset(args.data_dir, "train", args.fold, args.old_img_path_prefix,
+                                    args.new_img_path_prefix, train_transform)
+        if not args.no_validation:
+            test_dataset = BachDataset(args.data_dir, "val", args.fold, args.old_img_path_prefix,
+                                       args.new_img_path_prefix, test_transform)
+        else:
+            test_dataset = None
+    elif args.dataset == "breakhis_fold":
         breakhis_dir = os.path.join(args.data_dir, "breakhis")
         train_dataset = BreakhisFoldDataset(breakhis_dir, "train", args.fold, args.train_mag, train_transform)
         test_dataset = BreakhisFoldDataset(breakhis_dir, "val", args.fold, args.test_mag, test_transform)

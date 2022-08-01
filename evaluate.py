@@ -6,6 +6,7 @@ import os
 import mlflow
 import json
 
+from datasets.bach_dataset import BachDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.nct_dataset import NCTDataset
@@ -56,7 +57,7 @@ def evaluate(args):
 
     splits = args.splits.split(",")
     assert_splits(splits)
-
+    print("splits", splits)
     # evaluate one or multiple splits
     results = {}
     for split in splits:
@@ -66,7 +67,10 @@ def evaluate(args):
 
 
 def evaluate_split(args, split, transform):
-    if args.dataset == "breakhis_fold":
+    if args.dataset == "bach":
+        num_classes = 4
+        dataset = BachDataset(root_dir=args.data_dir, split=split, fold=args.fold, transform=transform)
+    elif args.dataset == "breakhis_fold":
         num_classes = 2
         dataset = BreakhisFoldDataset(args.data_dir, split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":

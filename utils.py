@@ -13,10 +13,10 @@ from pathlib import Path
 import json
 from torchvision import transforms
 
-from models import models
+
+from models import models, is_equivariant
 from collect_env import collect_env_info
 from datasets import convert_transform_to_dict, convert_dict_to_transform
-from models import is_equivariant
 
 
 def setup_logging(output_dir):
@@ -92,7 +92,7 @@ def read_args(parser):
                              'and now they should be used in another.')
     parser.add_argument('--exp_name', type=str, default="Default",
                         help='MLFlow experiment folder where the results will be logged')
-    parser.add_argument('--fold', type=int, default=1, choices=[1, 2, 3, 4, 5], help='Fold used for training and testing')
+    parser.add_argument('--fold', type=int, default=None, choices=[0, 1, 2, 3, 4], help='Fold used for training and testing')
     parser.add_argument('--train_mag', type=str, choices=["40", "100", "200", "400"],
                         help='Magnitude of training images')
     parser.add_argument('--test_mag', type=str, choices=["40", "100", "200", "400"],
@@ -104,7 +104,7 @@ def read_args(parser):
                         help="Type of optimizer used for training")
     parser.add_argument('--weight_decay', type=float, default=0.0,
                         help="L2 penalty of the model weights that improves regularization, switched off by default")
-    parser.add_argument('--lr_scheduler_type', type=str, choices=["StepLR", "OneCycleLR", "ReduceLROnPlateau"],
+    parser.add_argument('--lr_scheduler_type', type=str, choices=["Constant", "StepLR", "OneCycleLR", "ReduceLROnPlateau"],
                         help='Type of learning rate scheduler used for training.')
     parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")
     parser.add_argument('--start_lr', type=float, default=None, help="Initial learning rate at the start")

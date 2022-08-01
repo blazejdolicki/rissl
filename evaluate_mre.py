@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn.functional as F
 
-
+from datasets.bach_dataset import BachDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
 from datasets.nct_dataset import NCTDataset
@@ -63,7 +63,10 @@ def evaluate_mre(args):
     with open(args_path, 'w') as file:
         json.dump(vars(args), file, indent=4)
 
-    if args.dataset == "breakhis_fold":
+    if args.dataset == "bach":
+        num_classes = 4
+        dataset = BachDataset(root_dir=args.data_dir, split=args.split, fold=args.fold, transform=transform)
+    elif args.dataset == "breakhis_fold":
         num_classes = 2
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":

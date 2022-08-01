@@ -7,6 +7,7 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument("--log_dir", type=str, default="logs",
                     help="Directory with logs: checkpoints, parameters, metrics")
+parser.add_argument("--subfolder_results_path", type=str, default="results.json")
 args = parser.parse_args()
 
 job_id = args.log_dir.split("/")[-1]
@@ -16,7 +17,7 @@ output_path = os.path.join(args.log_dir, "avg_seed_results.json")
 
 for seed_folder in os.listdir(args.log_dir):
     seed_dir = os.path.join(args.log_dir, seed_folder)
-    acc_path = os.path.join(seed_dir, "evaluate", job_id, "results.json")
+    acc_path = os.path.join(seed_dir, "evaluate", job_id, args.subfolder_results_path)
 
     with open(acc_path) as json_file:
         results = json.load(json_file)

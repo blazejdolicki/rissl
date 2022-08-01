@@ -38,14 +38,14 @@ if __name__ == "__main__":
 
     utils.setup_mlflow(args)
 
-
-
     train_dataset, valid_dataset, num_classes = get_dataset(train_transform, valid_transform, args)
 
-    logging.info(f"Train size {len(train_dataset)}, valid size {len(valid_dataset)}")
-
+    logging.info(f"Train size {len(train_dataset)}")
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+
+    if not args.no_validation:
+        logging.info(f"valid size {len(valid_dataset)}")
+        valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
     logging.info(f"Device: {device}")
@@ -106,12 +106,14 @@ if __name__ == "__main__":
                                                         epochs=args.num_epochs)
     elif args.lr_scheduler_type == "StepLR":
         # step_size and gamma from Worrall and Welling, 2019
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
-
-        assert args.dataset == "pcam", "Learning rate scheduler hardcoded for PCam, make sure to adjust it for other datasets"
+        if args.dataset == "pcam":
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     elif args.lr_scheduler_type == "ReduceLROnPlateau":
         # mode="max" because lr is reduced based on validation accuracy
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max')
+    elif args.lr_scheduler_type == "Constant":
+        # if we want constant learning rate, we don't initialize the scheduler
+        pass
     else:
         raise ValueError("Incorrect type of learning rate scheduler.")
 
@@ -283,25 +285,26 @@ if __name__ == "__main__":
         mlflow.log_metric("final_valid_loss", valid_epoch_loss)
         mlflow.log_metric("final_valid_acc", valid_epoch_acc)
 
-    # save metrics summary
-    metrics_summary_path = os.path.join(args.log_dir, "metrics_summary.json")
-    metrics_summmary = {"best_valid_loss": best_valid_loss,
-                        "best_valid_acc": best_valid_acc,
-                        "best_valid_epoch": best_valid_epoch,
-                        "final_valid_loss": valid_epoch_loss,
-                        "final_valid_acc": valid_epoch_acc
-                        }
+        # save metrics summary
+        metrics_summary_path = os.path.join(args.log_dir, "metrics_summary.json")
+        metrics_summmary = {"best_valid_loss": best_valid_loss,
+                            "best_valid_acc": best_valid_acc,
+                            "best_valid_epoch": best_valid_epoch,
+                            "final_valid_loss": valid_epoch_loss,
+                            "final_valid_acc": valid_epoch_acc
+                            }
 
-    with open(metrics_summary_path, 'w') as file:
-        json.dump(metrics_summmary, file, indent=4)
+        with open(metrics_summary_path, 'w') as file:
+            json.dump(metrics_summmary, file, indent=4)
 
     # save metrics over epochs to json
     metrics_path = os.path.join(args.log_dir, "metrics_over_epochs.json")
     metrics = {"train": {"losses": train_losses,
-                         "accs": train_accs},
-               "valid": {"losses": valid_losses,
-                        "accs": valid_accs}
+                         "accs": train_accs}
                }
+
+    if not args.no_validation:
+        metrics["valid"] = {"losses": valid_losses, "accs": valid_accs}
 
     with open(metrics_path, 'w') as file:
         json.dump(metrics, file, indent=4)
@@ -311,7 +314,6 @@ if __name__ == "__main__":
     torch.save(model.state_dict(), final_model_path)
 
     writer.close()
-
 
     gpu_mem_gb = round(torch.cuda.max_memory_allocated()/10**9, 2)
     logging.info(f'Max GPU memory allocated (in GBs): {gpu_mem_gb}')

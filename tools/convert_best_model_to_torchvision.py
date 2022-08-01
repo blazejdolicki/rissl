@@ -11,6 +11,7 @@ from convert_vissl_to_torchvision import convert_and_save_model
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--log_dir", type=str, help="Directory with logs including the best model checkpoint")
+
 args = parser.parse_args()
 
 with open(os.path.join(args.log_dir, "acc_summary.json")) as json_file:
