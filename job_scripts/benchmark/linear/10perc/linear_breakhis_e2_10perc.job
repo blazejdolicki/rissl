@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -N 1 # number of nodes
-#SBATCH -p batch
+#SBATCH -p a6000
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=linear_breakhis_moco_e2_10perc
+#SBATCH --job-name=linear_breakhis_e2_10perc
 #SBATCH -t 10:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16

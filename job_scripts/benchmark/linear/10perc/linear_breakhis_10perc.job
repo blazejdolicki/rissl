@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -N 1 # number of nodes
-#SBATCH -p batch
+#SBATCH -p a6000
 #SBATCH --gpus-per-node=1
 #SBATCH --job-name=linear_breakhis_10perc
 #SBATCH -t 10:00:00

@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -N 1 # number of nodes
-#SBATCH -p batch
+#SBATCH -p a6000
 #SBATCH --gpus-per-node=1
 #SBATCH --job-name=linear_pcam_moco_e2_10perc
-#SBATCH -t 1-00:00:00
+#SBATCH -t 2-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 ## SBATCH --exclude=eudoxus
