@@ -28,7 +28,7 @@ DATA_DIR="/mnt/archive/projectdata/data_breakhis"
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2/14640/seed_187/converted_best_model.torch"
 # seed: 389
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2/14640/seed_389/converted_best_model.torch"
-
+MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2/14681/seed_389/converted_best_model.torch"
 
 # finetune non-e2 no rot aug
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_breakhis_moco_no_rot_aug/14253/checkpoints/best_model.pt"
@@ -40,7 +40,7 @@ DATA_DIR="/mnt/archive/projectdata/data_breakhis"
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_breakhis_e2_moco/14256/checkpoints/best_model.pt"
 #MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/finetune/finetune_breakhis_e2_moco/14315/checkpoints/best_model.pt"
 
-MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2_512/14831/seed_7/converted_best_model.torch"
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2_512/14831/seed_7/converted_best_model.torch"
 
 # set checkpoint dir to be inside log dir of the log dir of the loaded model
 CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })

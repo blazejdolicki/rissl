@@ -5,6 +5,8 @@ import logging
 import os
 import mlflow
 import json
+from torchmetrics import AUROC
+import torch.nn.functional as F
 
 from datasets.bach_dataset import BachDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
@@ -109,6 +111,10 @@ def evaluate_split(args, split, transform):
     epoch_loss = 0.0
     correct = 0.0
     actual_data_size = 0.0
+    # following docs https://torchmetrics.readthedocs.io/en/stable/classification/auroc.html
+
+    metric = AUROC(num_classes=num_classes, average='macro')
+
     with torch.no_grad():
         for batch in dataloader:
 
@@ -128,6 +134,13 @@ def evaluate_split(args, split, transform):
             preds = outputs.argmax(dim=1)
             correct += (preds == labels).sum().item()
 
+            probs = F.softmax(outputs, dim=1)
+            auroc = metric(probs, labels)
+
+    epoch_auroc = metric.compute().item()
+    print("auroc type", type(epoch_auroc))
+    logging.info(f"{split} AUROC: {epoch_auroc}")
+
     epoch_loss = epoch_loss / actual_data_size
     epoch_acc = 100 * correct / actual_data_size
 
@@ -138,7 +151,7 @@ def evaluate_split(args, split, transform):
 
     mlflow.end_run()
 
-    return {"loss": epoch_loss, "acc": epoch_acc}
+    return {"loss": epoch_loss, "acc": epoch_acc, "auroc": epoch_auroc}
 
 def assert_splits(splits):
     possible_splits = ["test", "val", "valid"]
