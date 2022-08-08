@@ -12,7 +12,7 @@ from argparse import Namespace
 from pathlib import Path
 import json
 from torchvision import transforms
-
+from torchmetrics import AUROC, ConfusionMatrix, F1Score
 
 from models import models, is_equivariant
 from collect_env import collect_env_info
@@ -340,3 +340,9 @@ def assert_pretrained_state_dict(missing_keys, unexpected_keys):
     assert missing_keys == ["fc.weight", "fc.bias"], f"Missing key(s) in state_dict: {missing_keys}"
     assert len(unexpected_keys) == 0, f"Unexpected key(s) in state_dict: {unexpected_keys}"
 
+
+def init_metrics(num_classes):
+    metrics = {"auroc": AUROC(num_classes=num_classes, average='macro'),
+               "confusion_matrix": ConfusionMatrix(num_classes=num_classes),
+               "f1": F1Score(num_classes=num_classes, average='macro')}
+    return metrics

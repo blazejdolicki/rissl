@@ -5,7 +5,7 @@ import logging
 import os
 import mlflow
 import json
-from torchmetrics import AUROC
+from torchmetrics import ConfusionMatrix
 import torch.nn.functional as F
 
 from datasets.bach_dataset import BachDataset
@@ -113,11 +113,10 @@ def evaluate_split(args, split, transform):
     actual_data_size = 0.0
     # following docs https://torchmetrics.readthedocs.io/en/stable/classification/auroc.html
 
-    metric = AUROC(num_classes=num_classes, average='macro')
+    epoch_metrics = utils.init_metrics(num_classes)
 
     with torch.no_grad():
         for batch in dataloader:
-
 
             inputs, labels = batch
             batch_size = inputs.shape[0]
@@ -135,23 +134,38 @@ def evaluate_split(args, split, transform):
             correct += (preds == labels).sum().item()
 
             probs = F.softmax(outputs, dim=1)
-            auroc = metric(probs, labels)
+            # update state of every metric
+            for metric_name in epoch_metrics:
+                epoch_metrics[metric_name](probs.cpu(), labels.cpu())
 
-    epoch_auroc = metric.compute().item()
-    print("auroc type", type(epoch_auroc))
-    logging.info(f"{split} AUROC: {epoch_auroc}")
+    final_metrics = {}
+    for metric_name, metric in epoch_metrics.items():
+        final_metrics[metric_name] = metric.compute()
+        if isinstance(metric, ConfusionMatrix):
+            final_metrics[metric_name] = final_metrics[metric_name].tolist()
+        else:
+            final_metrics[metric_name] = final_metrics[metric_name].item()
 
     epoch_loss = epoch_loss / actual_data_size
     epoch_acc = 100 * correct / actual_data_size
 
-    logging.info(f"{split} loss: \t{epoch_loss}, {split} acc: \t{epoch_acc}")
+    final_metrics["loss"] = epoch_loss
+    final_metrics["acc"] = epoch_acc
+    # sort keys alphabetically
+    final_metrics = dict(sorted(final_metrics.items()))
 
-    mlflow.log_metric(f"{split}_loss", epoch_loss)
-    mlflow.log_metric(f"{split}_acc", epoch_acc)
+    logging.info("Final metrics")
+    logging.info(final_metrics)
+
+    # convert confusion matrix to string
+    for metric_name, metric_value in final_metrics.items():
+        # can only log scalars, not arrays
+        if metric_name != "confusion_matrix":
+            mlflow.log_metric(metric_name, metric_value)
 
     mlflow.end_run()
 
-    return {"loss": epoch_loss, "acc": epoch_acc, "auroc": epoch_auroc}
+    return final_metrics
 
 def assert_splits(splits):
     possible_splits = ["test", "val", "valid"]

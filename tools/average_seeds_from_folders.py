@@ -32,6 +32,8 @@ for folder in folders:
     folder_name = folder_path.parts[-1]
     output_name.append(folder_name)
 
+
+
     eval_path = folder_path / "evaluate"
     first_eval_child = next(eval_path.iterdir())
     assert next(eval_path.iterdir()) == first_eval_child, f"There should be only one child in directory"
