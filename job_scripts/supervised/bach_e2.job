@@ -48,16 +48,15 @@ fi
 # to the best validation accuracy for each fold for the optimal hyperparameters.
 # We also now train on all k folds that were used in cross-validation instead of k-1.
 
-# TODO change seeds and epochs after debugging
-SEEDS=(7) # 187 389)
+SEEDS=(7 187 389)
 for seed in ${SEEDS[@]}; do
   SEED_DIR=$CHECKPOINT_DIR/seed_$seed
-  # Hyperparameters from TODO get hyperparams: max_lr, optimizer, weight_decay, epochs, learning rate scheduler
+  # Hyperparameters from /home/b.dolicki/logs/supervised/bach_e2_tuning/15266/run_12
   python train.py --dataset bach --data_dir $DATA_DIR --old_img_path_prefix $OLD_IMG_PATH_PREFIX \
                     --new_img_path_prefix $NEW_IMG_PATH_PREFIX --log_dir $SEED_DIR  \
                     --mlflow_dir /home/b.dolicki/mlflow_runs --num_workers 1 --batch_size 64 \
-                    --model_type e2_resnet18 --max_lr 100000 --lr_scheduler_type OneCycleLR --optimizer adam \
-                    --weight_decay 100000 --exp_name bach_e2 --num_epochs 1 --seed $seed --no_validation \
+                    --model_type e2_resnet18 --max_lr 0.001 --lr_scheduler_type Constant --optimizer adam \
+                    --weight_decay 1e-06 --exp_name bach_e2 --num_epochs 25 --seed $seed --no_validation \
                     --no_early_stopping --no_rotation_transforms --fixparams
 
   # use final model instead of best model (because we don't know which one is best)
