@@ -1,0 +1,104 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p batch
+#SBATCH --gpus-per-node=1
+#SBATCH --job-name=linear_nct_moco_no_rot_aug
+#SBATCH -t 10:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+#SBATCH --cpus-per-task=16
+#SBATCH --exclude=eudoxus
+
+
+CONFIG_PATH=benchmark/linear/moco/linear_no_rot_aug_nct.yaml
+LOGS_DIR=/home/b.dolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/benchmark/linear/$SLURM_JOB_NAME/$SLURM_JOB_ID
+PRETRAINED_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco_no_rot_aug/12791/model_final_checkpoint_phase199.torch"
+
+
+DATA_HOME_DIR="/mnt/archive/projectdata/data_nct"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/nct"
+
+# might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
+source activate vissl
+
+use_scratch=true
+if [ "$use_scratch" = true ] ; then
+
+  mkdir -p $DATA_SCRATCH_DIR
+  start_time=$(date '+%B %V %T')
+  echo "${start_time}: Copying data from $DATA_HOME_DIR to $DATA_SCRATCH_DIR..."
+
+  # Note: If the source directory has a trailing slash, rsync will copy only the directory
+  # contents to the destination directory. When the trailing slash is omitted, rsync copies the source
+  # directory inside the destination directory.
+
+  rsync -az $DATA_HOME_DIR/ $DATA_SCRATCH_DIR # add -v option for verbose
+  end_time=$(date '+%B %V %T')
+  echo "${end_time}: Finished copying data to scratch"
+
+  OLD_IMG_PATH_PREFIX=$DATA_HOME_DIR
+  NEW_IMG_PATH_PREFIX=$DATA_SCRATCH_DIR
+  DATA_DIR=$DATA_SCRATCH_DIR
+else
+  echo "Data will not be copied to scratch"
+  OLD_IMG_PATH_PREFIX=None
+  NEW_IMG_PATH_PREFIX=None
+  DATA_DIR=$DATA_HOME_DIR
+fi
+
+export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
+
+SEEDS=(7 187 389)
+for seed in ${SEEDS[@]}; do
+  cd $HOME/thesis/vissl
+
+  SEED_DIR=$CHECKPOINT_DIR/seed_$seed
+  python tools/run_distributed_engines.py \
+    config=$CONFIG_PATH \
+    config.DATA.TRAIN.DATASET_NAMES=[nct] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_images.npy"] \
+    config.DATA.TRAIN.LABEL_PATHS=["$DATA_DIR/train_labels.npy"] \
+    config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$OLD_IMG_PATH_PREFIX \
+    config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
+    config.DATA.TEST.DATASET_NAMES=[nct] \
+    config.DATA.TEST.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TEST.LABEL_SOURCES=[disk_filelist] \
+    config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid_images.npy"] \
+    config.DATA.TEST.LABEL_PATHS=["$DATA_DIR/valid_labels.npy"] \
+    config.DATA.TEST.REMOVE_IMG_PATH_PREFIX=$OLD_IMG_PATH_PREFIX \
+    config.DATA.TEST.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
+    config.CHECKPOINT.DIR=$SEED_DIR \
+    config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$PRETRAINED_WEIGHTS \
+    config.OPTIMIZER.num_epochs=100 \
+    config.SEED_VALUE=$seed
+    # based on https://github.com/facebookresearch/moco/blob/main/main_lincls.py
+
+  cd $HOME/thesis/rissl
+  # save file with best epoch and loss
+  python tools/benchmark_summarize_metrics.py --log_dir $SEED_DIR
+  # convert best VISSL model to torchvision
+  python tools/convert_best_model_to_torchvision.py --log_dir $SEED_DIR
+
+  LINEAR_WEIGHTS=$SEED_DIR/converted_best_model.torch
+  EVAL_DIR=$SEED_DIR/evaluate/$SLURM_JOB_ID
+  python evaluate.py --dataset nct --data_dir $DATA_DIR --split valid,test --log_dir $EVAL_DIR \
+                --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
+                --checkpoint_path $LINEAR_WEIGHTS --batch_size=512 --num_workers=1
+
+  for mre_n in 4 16; do
+    MRE_DIR=$SEED_DIR/mre/mre_${mre_n}/$SLURM_JOB_ID
+
+    python evaluate_mre.py --dataset nct --data_dir $DATA_DIR --split test --log_dir $MRE_DIR \
+                    --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
+                    --checkpoint_path $LINEAR_WEIGHTS \
+                    --batch_size=128 --num_workers=1 --exp_name mre_nct --mre_n $mre_n
+  done
+
+done
+
+python tools/average_seeds.py --log_dir $CHECKPOINT_DIR
+
+# move slurm output from default location to logs after the job is finished
+mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

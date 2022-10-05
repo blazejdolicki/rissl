@@ -9,23 +9,18 @@ parser.add_argument("--sample_size", default=10,
                     type=int, help="Size of the sampled datasets")
 parser.add_argument("--seed", default=7,
                     type=int, help="Random seed used to sample splits to enable reproducibility")
-
+parser.add_argument("--data_dir", type=str, help="Directory where the data is stored and where"
+                                                 "the output files will be store")
 args = parser.parse_args()
 
 VALID_RATIO = 0.25
 
-DATA_PATH = "data/nct/"
 split_folders = {"train": "NCT-CRC-HE-100K",
                  "test": "CRC-VAL-HE-7K"}
 
-current_dir = os.getcwd()
-DATA_PATH = os.path.join(current_dir, DATA_PATH)
+DATA_PATH = args.data_dir
 
 print("DATA PATH", DATA_PATH)
-
-# set seed
-# TODO: I manually checked and the sampled images are the same, but it would be neat
-# to add a test here
 
 random.seed(args.seed)
 print("Random seed:", args.seed)

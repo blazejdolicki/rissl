@@ -1,18 +1,17 @@
 import argparse
-from argparse import Namespace
-from pathlib import Path
 import torch
 from torch.utils.data import DataLoader
 import logging
-from torchvision import transforms
 import os
-from tqdm import tqdm
 import mlflow
 import json
-import time
+from torchmetrics import ConfusionMatrix
+import torch.nn.functional as F
 
+from datasets.bach_dataset import BachDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
+from datasets.nct_dataset import NCTDataset
 from datasets.pcam_dataset import PCamDataset
 import utils
 from models import get_model
@@ -38,6 +37,7 @@ results = evaluate(args)
 
 """
 
+
 def evaluate(args):
     # Our logging needs to be defined before importing libraries that set up their own logging such as get_transform()
     # https://stackoverflow.com/questions/20240464/python-logging-file-is-not-working-when-using-logging-basicconfig
@@ -45,6 +45,9 @@ def evaluate(args):
     utils.setup_logging(args.log_dir)
 
     args, transform = utils.parse_args_from_checkpoint(args)
+
+    print("transforms:")
+    print(transform)
 
     utils.fix_seed(args.seed)
 
@@ -56,7 +59,7 @@ def evaluate(args):
 
     splits = args.splits.split(",")
     assert_splits(splits)
-
+    print("splits", splits)
     # evaluate one or multiple splits
     results = {}
     for split in splits:
@@ -66,15 +69,23 @@ def evaluate(args):
 
 
 def evaluate_split(args, split, transform):
-    if args.dataset == "breakhis_fold":
+    if args.dataset == "bach":
         num_classes = 4
+        dataset = BachDataset(root_dir=args.data_dir, split=split, fold=args.fold, transform=transform)
+    elif args.dataset == "breakhis_fold":
+        num_classes = 2
         dataset = BreakhisFoldDataset(args.data_dir, split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
-        num_classes = 4
-        dataset = BreakhisDataset(args.data_dir, split, transform)
+        num_classes = 2
+        dataset = BreakhisDataset(root_dir=args.data_dir, split=split, transform=transform)
+    elif args.dataset == "nct":
+        num_classes = 9
+        dataset = NCTDataset(root_dir=args.data_dir, split=split, transform=transform)
     elif args.dataset == "pcam":
         num_classes = 2
         dataset = PCamDataset(root_dir=args.data_dir, split=split, transform=transform, sample=args.sample)
+    else:
+        raise KeyError(f"Dataset {args.dataset} not available.")
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
@@ -91,6 +102,8 @@ def evaluate_split(args, split, transform):
         state_dict = utils.convert_model_to_single_gpu(state_dict)
 
     model.load_state_dict(state_dict)
+    logging.info(f"Model loaded successfully")
+
     model.eval()
 
     criterion = torch.nn.CrossEntropyLoss()
@@ -98,9 +111,12 @@ def evaluate_split(args, split, transform):
     epoch_loss = 0.0
     correct = 0.0
     actual_data_size = 0.0
+    # following docs https://torchmetrics.readthedocs.io/en/stable/classification/auroc.html
+
+    epoch_metrics = utils.init_metrics(num_classes, args.selected_metrics)
+
     with torch.no_grad():
         for batch in dataloader:
-
 
             inputs, labels = batch
             batch_size = inputs.shape[0]
@@ -117,20 +133,42 @@ def evaluate_split(args, split, transform):
             preds = outputs.argmax(dim=1)
             correct += (preds == labels).sum().item()
 
+            probs = F.softmax(outputs, dim=1)
+            # update state of every metric
+            for metric_name in epoch_metrics:
+                epoch_metrics[metric_name](probs.cpu(), labels.cpu())
+
+    final_metrics = {}
+    for metric_name, metric in epoch_metrics.items():
+        final_metrics[metric_name] = metric.compute()
+        if isinstance(metric, ConfusionMatrix):
+            final_metrics[metric_name] = final_metrics[metric_name].tolist()
+        else:
+            final_metrics[metric_name] = final_metrics[metric_name].item()
+
     epoch_loss = epoch_loss / actual_data_size
     epoch_acc = 100 * correct / actual_data_size
 
-    logging.info(f"{split} loss: \t{epoch_loss}, {split} acc: \t{epoch_acc}")
+    final_metrics["loss"] = epoch_loss
+    final_metrics["acc"] = epoch_acc
+    # sort keys alphabetically
+    final_metrics = dict(sorted(final_metrics.items()))
 
-    mlflow.log_metric(f"{split}_loss", epoch_loss)
-    mlflow.log_metric(f"{split}_acc", epoch_acc)
+    logging.info("Final metrics")
+    logging.info(final_metrics)
+
+    # convert confusion matrix to string
+    for metric_name, metric_value in final_metrics.items():
+        # can only log scalars, not arrays
+        if metric_name != "confusion_matrix":
+            mlflow.log_metric(metric_name, metric_value)
 
     mlflow.end_run()
 
-    return {"loss": epoch_loss, "acc": epoch_acc}
+    return final_metrics
 
 def assert_splits(splits):
-    possible_splits = ["test", "valid"]
+    possible_splits = ["test", "val", "valid"]
     for split in splits:
         assert split in possible_splits, f"Invalid split name: {split}. Possible splits are: {possible_splits}."
 
@@ -161,6 +199,9 @@ if __name__ == "__main__":
     parser.add_argument('--sample', type=float, default=None,
                         help='A fraction or number of examples that will be subsampled from the full dataset. '
                              'Useful for quick debugging and experiments with low data regimes.')
+    parser.add_argument('--last_hid_dims', type=int, default=-1,
+                        help='Dimensionality of the last hidden activations for e2')
+    parser.add_argument("--selected_metrics", type=str, default="auroc,confusion_matrix,f1")
 
     args = parser.parse_args()
 

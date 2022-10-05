@@ -1,0 +1,60 @@
+#!/bin/bash
+
+#SBATCH -N 1 # number of nodes
+#SBATCH --partition=batch
+#SBATCH --job-name=mre_pcam
+#SBATCH --gpus-per-node=1
+#SBATCH --time=00:15:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+#SBATCH --nodelist=eudoxus
+
+# Note: Given that when computing MRE the actual batch size is N times larger than the one specified
+# you might have to decrease it in order to fit in memory, especially for equivariant model or large N
+
+LOGS_DIR=/home/b.dolicki/logs
+
+source activate vissl
+cd $HOME/thesis/rissl/
+
+DATA_DIR="/mnt/archive/projectdata/data_pcam"
+
+# supervised pcam non-e2
+#MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam/12932/checkpoints/model_epoch_45.pt"
+# supervised pcam e2
+#MODEL_WEIGHTS="/home/b.dolicki/logs/supervised/pcam_e2/14067/checkpoints/best_model.pt"
+
+# linear pcam non-e2 no rotations
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_no_rot_aug/14124/converted_best_model.torch"
+# linear pcam non-e2 with rotations
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco/14125/converted_best_model.torch"
+# linear pcam e2
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_pcam_moco_e2/14126/converted_best_model.torch"
+
+# linear non-e2 no rot aug
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_no_rot_aug/14188/converted_best_model.torch"
+# linear non-e2 with rot aug
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco/14176/converted_best_model.torch"
+# linear e2
+#MODEL_WEIGHTS="/home/b.dolicki/logs/benchmark/linear/linear_breakhis_moco_e2/14189/converted_best_model.torch"
+
+MRE_N=16
+
+# set checkpoint dir to be inside log dir of the log dir of the loaded model
+CHECKPOINT_DIR=(${MODEL_WEIGHTS//// })
+unset CHECKPOINT_DIR[-1]
+# go one parent dir higher if the model is trained from scratch (get out of `checkpoints` folder)
+if [[ $MODEL_WEIGHTS == *"supervised"* ]]; then
+  unset CHECKPOINT_DIR[-1]
+fi
+CHECKPOINT_DIR=/$(IFS=/ ; echo "${CHECKPOINT_DIR[*]}")/mre/mre_${MRE_N}/$SLURM_JOB_ID
+mkdir -p $CHECKPOINT_DIR
+
+python evaluate_mre.py --dataset pcam --data_dir $DATA_DIR --split test --log_dir $CHECKPOINT_DIR \
+                --mlflow_dir /home/b.dolicki/thesis/mlflow_runs \
+                --checkpoint_path $MODEL_WEIGHTS \
+                --batch_size=64 --num_workers=1 --exp_name mre_pcam --mre_n $MRE_N
+
+echo "finished"
+
+# move slurm output from default location to logs after the job is finished
+mv $HOME/thesis/rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

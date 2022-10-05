@@ -7,9 +7,7 @@
 #SBATCH --time=01:00:00
 #SBATCH --output=job_logs/slurm_output_%x_%j.out
 
-DIR=$HOME/thesis/ssl-histo/data/bach
-mkdir -p $DIR
-cd $DIR
+cd /mnt/archive/projectdata/data_bach
 
 curl -O https://zenodo.org/record/3632035/files/ICIAR2018_BACH_Challenge.zip
 curl -O https://zenodo.org/record/3632035/files/ICIAR2018_BACH_Challenge_TestDataset.zip

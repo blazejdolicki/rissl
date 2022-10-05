@@ -13,9 +13,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn.functional as F
 
-
+from datasets.bach_dataset import BachDataset
 from datasets.breakhis_fold_dataset import BreakhisFoldDataset
 from datasets.breakhis_dataset import BreakhisDataset
+from datasets.nct_dataset import NCTDataset
 from datasets.pcam_dataset import PCamDataset
 from datasets.dummy_dataset import DummyDataset
 from datasets.discrete_rotation import DiscreteRotation
@@ -62,12 +63,18 @@ def evaluate_mre(args):
     with open(args_path, 'w') as file:
         json.dump(vars(args), file, indent=4)
 
-    if args.dataset == "breakhis_fold":
+    if args.dataset == "bach":
         num_classes = 4
+        dataset = BachDataset(root_dir=args.data_dir, split=args.split, fold=args.fold, transform=transform)
+    elif args.dataset == "breakhis_fold":
+        num_classes = 2
         dataset = BreakhisFoldDataset(args.data_dir, args.split, args.fold, args.test_mag, transform)
     elif args.dataset == "breakhis":
-        num_classes = 4
-        dataset = BreakhisDataset(args.data_dir, args.split, transform)
+        num_classes = 2
+        dataset = BreakhisDataset(root_dir=args.data_dir, split=args.split, transform=transform)
+    elif args.dataset == "nct":
+        num_classes = 9
+        dataset = NCTDataset(root_dir=args.data_dir, split=args.split, transform=transform)
     elif args.dataset == "pcam":
         num_classes = 2
         dataset = PCamDataset(root_dir=args.data_dir, split=args.split, transform=transform, sample=args.sample)
@@ -165,8 +172,8 @@ def evaluate_mre(args):
 
     mre = np.mean(stds)
 
-    logging.info(f"MRE({N}): \t{mre}")
-    mlflow.log_metric(f"MRE_{N}", mre)
+    logging.info(f"mre_{N}: \t{mre}")
+    mlflow.log_metric(f"mre_{N}", mre)
 
     mlflow.end_run()
 
@@ -207,3 +214,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     mre = evaluate_mre(args)
+
+    results_path = os.path.join(args.log_dir, "results.json")
+    with open(results_path, 'w') as file:
+        json.dump({f"mre_{args.mre_n}": mre}, file, indent=4)

@@ -1,29 +1,26 @@
 #!/bin/bash
+
 #SBATCH -N 1 # number of nodes
-#SBATCH -p batch
-#SBATCH --gpus-per-node=1
+#SBATCH --partition=batch
 #SBATCH --job-name=finetune_pcam_moco_no_rot_aug
-#SBATCH -t 7-00:00:00
+#SBATCH --gpus-per-node=1
+#SBATCH --time=1-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=benchmark/finetune/moco/finetune_moco_no_rot_aug.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/benchmark/finetune/$SLURM_JOB_NAME/$SLURM_JOB_ID
-MODEL_WEIGHTS=$LOGS_DIR"/pretrain/pretrain_pcam_moco_no_rot_aug/12791/model_phase190.torch"
 
-DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
-DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
-
-
-# might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
 source activate vissl
-cd $HOME/thesis/vissl
+cd $HOME/thesis/rissl/
+mkdir -p $CHECKPOINT_DIR
 
-# TODO change to true after debugging
+DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam"
+MODEL_WEIGHTS="/home/b.dolicki/logs/pretrain/pretrain_pcam_moco_no_rot_aug/12791/converted_last_model.torch"
+
 use_scratch=true
-
 if [ "$use_scratch" = true ] ; then
 
   mkdir -p $DATA_SCRATCH_DIR
@@ -48,33 +45,14 @@ else
   DATA_DIR=$DATA_HOME_DIR
 fi
 
-export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
-
 # Hyperparameters from /home/b.dolicki/logs/supervised/pcam_tuning/12723/run_2
-python tools/run_distributed_engines.py \
-  config=$CONFIG_PATH \
-  config.DATA.TRAIN.DATASET_NAMES=[pcam] \
-  config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
-  config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
-  +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train"] \
-  config.DATA.TEST.DATASET_NAMES=[pcam] \
-  config.DATA.TEST.DATA_SOURCES=[disk_folder] \
-  config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
-  +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/val"] \
-  config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-  config.MODEL.WEIGHTS_INIT.PARAMS_FILE=$MODEL_WEIGHTS \
-  config.OPTIMIZER.name=adam \
-  config.OPTIMIZER.param_schedulers.lr.name=multistep \
-  config.OPTIMIZER.param_schedulers.lr.milestones=[40,80] \
-  config.OPTIMIZER.param_schedulers.lr.values=[0.001,0.0001,0.00001] \
-  config.OPTIMIZER.weight_decay=0.0001 \
-  config.OPTIMIZER.num_epochs=100 \
+python train.py --dataset pcam --data_dir $DATA_DIR --log_dir $CHECKPOINT_DIR --mlflow_dir /home/b.dolicki/mlflow_runs \
+                --num_epochs 100 --batch_size=512 --num_workers=1 --model_type resnet18 --max_lr 0.001 \
+                --lr_scheduler_type StepLR --optimizer adam --weight_decay 0.0001 --exp_name finetune_pcam_no_rot_aug \
+                --no_rotation_transforms --checkpoint_path $MODEL_WEIGHTS --seed 187
 
-cd $HOME/thesis/rissl
-# save file with best epoch and loss
-python tools/benchmark_summarize_metrics.py --log_dir $CHECKPOINT_DIR
-# convert best VISSL model to torchvision
-python tools/convert_best_model_to_torchvision.py --log_dir $CHECKPOINT_DIR
+
+echo "finished"
 
 # move slurm output from default location to logs after the job is finished
-mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+mv $HOME/thesis/rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

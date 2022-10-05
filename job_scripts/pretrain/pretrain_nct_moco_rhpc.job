@@ -1,0 +1,64 @@
+#!/bin/bash
+#SBATCH -N 1 # number of nodes
+#SBATCH -p batch
+#SBATCH --gpus-per-node=1
+#SBATCH --job-name=pretrain_pcam_moco
+#SBATCH -t 7-00:00:00
+#SBATCH --output=temp_logs/slurm_output_%j.out
+#SBATCH --cpus-per-task=16
+#SBATCH --exclude=eudoxus
+
+CONFIG_PATH=pretrain/moco/pretrain_moco.yaml
+LOGS_DIR=/home/b.dolicki/logs
+CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
+
+DATA_HOME_DIR="/mnt/archive/projectdata/data_nct"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/nct"
+
+# might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
+source activate vissl
+cd $HOME/thesis/vissl
+
+use_scratch=true
+if [ "$use_scratch" = true ] ; then
+
+  mkdir -p $DATA_SCRATCH_DIR
+  start_time=$(date '+%B %V %T')
+  echo "${start_time}: Copying data from $DATA_HOME_DIR to $DATA_SCRATCH_DIR..."
+
+  # Note: If the source directory has a trailing slash, rsync will copy only the directory
+  # contents to the destination directory. When the trailing slash is omitted, rsync copies the source
+  # directory inside the destination directory.
+
+  rsync -az $DATA_HOME_DIR/ $DATA_SCRATCH_DIR # add -v option for verbose
+  end_time=$(date '+%B %V %T')
+  echo "${end_time}: Finished copying data to scratch"
+
+  OLD_IMG_PATH_PREFIX=$DATA_HOME_DIR
+  NEW_IMG_PATH_PREFIX=$DATA_SCRATCH_DIR
+  DATA_DIR=$DATA_SCRATCH_DIR
+else
+  echo "Data will not be copied to scratch"
+  OLD_IMG_PATH_PREFIX=None
+  NEW_IMG_PATH_PREFIX=None
+  DATA_DIR=$DATA_HOME_DIR
+fi
+
+export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
+
+python3 tools/run_distributed_engines.py \
+    hydra.verbose=true \
+    config=$CONFIG_PATH\
+    config.DATA.TRAIN.DATASET_NAMES=[nct] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_images.npy"] \
+    config.DATA.TRAIN.REMOVE_IMG_PATH_PREFIX=$REMOVE_IMG_PATH_PREFIX \
+    config.DATA.TRAIN.NEW_IMG_PATH_PREFIX=$NEW_IMG_PATH_PREFIX \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
+
+# save file with best epoch and loss
+cd $HOME/thesis/rissl
+python tools/best_pretraining_epoch.py --log_dir $CHECKPOINT_DIR
+
+# move slurm output from default location to logs after the job is finished
+mv temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

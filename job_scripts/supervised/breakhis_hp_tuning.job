@@ -15,7 +15,7 @@ CHECKPOINT_DIR=$LOGS_DIR/supervised/$SLURM_JOB_NAME/$SLURM_JOB_ID
 module load 2021
 module load Anaconda3/2021.05
 
-source activate e2cnn
+source activate vissl
 cd $HOME/thesis/ssl-histo/
 mkdir -p $CHECKPOINT_DIR
 
@@ -24,4 +24,4 @@ python hp_tuning/breakhis_tuning.py --log_dir $CHECKPOINT_DIR --exp_name hp_brea
 echo "finished"
 
 # move slurm output from default location to logs after the job is finished
-mv $HOME/thesis/ssl-histo/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+mv $HOME/thesis/rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

@@ -12,11 +12,11 @@ from argparse import Namespace
 from pathlib import Path
 import json
 from torchvision import transforms
+from torchmetrics import AUROC, ConfusionMatrix, F1Score
 
-from models import models
+from models import models, is_equivariant
 from collect_env import collect_env_info
 from datasets import convert_transform_to_dict, convert_dict_to_transform
-from models import is_equivariant
 
 
 def setup_logging(output_dir):
@@ -92,7 +92,7 @@ def read_args(parser):
                              'and now they should be used in another.')
     parser.add_argument('--exp_name', type=str, default="Default",
                         help='MLFlow experiment folder where the results will be logged')
-    parser.add_argument('--fold', type=int, default=1, choices=[1, 2, 3, 4, 5], help='Fold used for training and testing')
+    parser.add_argument('--fold', type=int, default=None, choices=[0, 1, 2, 3, 4], help='Fold used for training and testing')
     parser.add_argument('--train_mag', type=str, choices=["40", "100", "200", "400"],
                         help='Magnitude of training images')
     parser.add_argument('--test_mag', type=str, choices=["40", "100", "200", "400"],
@@ -104,7 +104,7 @@ def read_args(parser):
                         help="Type of optimizer used for training")
     parser.add_argument('--weight_decay', type=float, default=0.0,
                         help="L2 penalty of the model weights that improves regularization, switched off by default")
-    parser.add_argument('--lr_scheduler_type', type=str, choices=["StepLR", "OneCycleLR"],
+    parser.add_argument('--lr_scheduler_type', type=str, choices=["Constant", "StepLR", "OneCycleLR", "ReduceLROnPlateau"],
                         help='Type of learning rate scheduler used for training.')
     parser.add_argument('--max_lr', type=float, default=0.001, help="Maximum learning rate")
     parser.add_argument('--start_lr', type=float, default=None, help="Initial learning rate at the start")
@@ -124,6 +124,8 @@ def read_args(parser):
     parser.add_argument('--patience', type=int, default=20, help="Number of epochs without improvement required for early stopping")
     parser.add_argument("--log_dir", type=str, default="logs",
                         help="Directory with logs: checkpoints, parameters, metrics")
+    parser.add_argument('--checkpoint_path', type=str, required=False,
+                        help="Path to a pretrained model used for finetuning")
     parser.add_argument("--mlflow_dir", type=str, default="/project/bdolicki/mlflow_runs",
                         help="Directory with MLFlow logs")
     parser.add_argument("--save_model_every_n_epochs", type=int, default=1,
@@ -163,11 +165,14 @@ def read_args(parser):
     parser.set_defaults(fixparams=False)
     parser.add_argument('--deltaorth', dest="deltaorth", action="store_true",
                         help='Use delta orthogonal initialization in conv layers')
+    parser.set_defaults(deltaorth=False)
     # DenseNet
     parser.add_argument('--growth_rate', type=int)
     parser.add_argument('--num_init_features', type=int)
+    parser.add_argument('--last_hid_dims', type=int, default=-1,
+                        help='Dimensionality of the last hidden activations for e2')
 
-    parser.set_defaults(deltaorth=False)
+
     args = parser.parse_args()
     return args
 
@@ -273,7 +278,7 @@ def parse_args_from_checkpoint(args):
 
 
     if args.checkpoint_path is not None:
-        if "supervised" in args.checkpoint_path:
+        if ("supervised" in args.checkpoint_path) or ("finetune" in args.checkpoint_path):
             # read arguments of the training job
             train_log_dir = Path(args.checkpoint_path).parent.parent
             with open(os.path.join(train_log_dir, "args.json")) as json_file:
@@ -329,3 +334,18 @@ def parse_args_from_checkpoint(args):
 
     transform = transforms.Compose(transform_list)
     return args, transform
+
+
+def assert_pretrained_state_dict(missing_keys, unexpected_keys):
+    assert missing_keys == ["fc.weight", "fc.bias"], f"Missing key(s) in state_dict: {missing_keys}"
+    assert len(unexpected_keys) == 0, f"Unexpected key(s) in state_dict: {unexpected_keys}"
+
+
+def init_metrics(num_classes, selected_metrics):
+    metrics = {"auroc": AUROC(num_classes=num_classes, average='macro'),
+               "confusion_matrix": ConfusionMatrix(num_classes=num_classes),
+               "f1": F1Score(num_classes=num_classes, average='macro')}
+
+    selected_metrics = selected_metrics.split(",")
+    metrics = {k: v for k, v in metrics.items() if k in selected_metrics}
+    return metrics

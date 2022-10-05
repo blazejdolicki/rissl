@@ -223,7 +223,8 @@ class E2ResNet(torch.nn.Module):
         groups: int = 1,
         width_per_group: int = 64,
         num_input_channels=3,
-        replace_stride_with_dilation: Optional[List[bool]] = None
+        replace_stride_with_dilation: Optional[List[bool]] = None,
+        last_hid_dims=-1
     ) -> None:
         """
 
@@ -266,7 +267,7 @@ class E2ResNet(torch.nn.Module):
         # Equivariant part of initialization of ResNet
         self._fixparams = fixparams
         self.conv2triv = conv2triv
-
+        self.last_hid_dims = last_hid_dims
         self._layer = 0
         self._N = N
 
@@ -434,6 +435,10 @@ class E2ResNet(torch.nn.Module):
         # add last block
         if out_fiber is None:
             out_fiber = main_fiber
+        elif self.last_hid_dims != -1:
+            # set
+            planes = self.last_hid_dims
+
         out_type = FIBERS[out_fiber](self.gspace, planes, fixparams=self._fixparams)
 
         last_block = block(in_fiber=self.next_in_type,

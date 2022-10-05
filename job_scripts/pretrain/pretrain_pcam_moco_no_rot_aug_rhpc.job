@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --exclude=eudoxus
 
-CONFIG_PATH=pretrain/moco/pretrain_no_rot_aug.yaml
+CONFIG_PATH=pretrain/moco/pretrain_moco_no_rot_aug.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
@@ -65,6 +65,10 @@ python3 tools/run_distributed_engines.py \
 # save file with best epoch and loss
 cd $HOME/thesis/rissl
 python tools/best_pretraining_epoch.py --log_dir $CHECKPOINT_DIR
+
+python convert_vissl_to_torchvision.py --model_url_or_file $CHECKPOINT_DIR/model_final_checkpoint_phase199.torch \
+                                       --output_dir $CHECKPOINT_DIR \
+                                       --output_name last_model
 
 # move slurm output from default location to logs after the job is finished
 mv temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/

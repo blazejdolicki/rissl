@@ -48,7 +48,6 @@ fi
 
 export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.json
 
-# TODO increase number of epochs
 python3 tools/run_distributed_engines.py \
     hydra.verbose=true \
     config=$CONFIG_PATH\
@@ -61,9 +60,11 @@ python3 tools/run_distributed_engines.py \
     config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
     +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-    config.OPTIMIZER.num_epochs=1 # TODO change this and learning rate scheduler back to normal after debugging
+    config.MODEL.TRUNK.E2_RESNETS.fixparams=True
 
-
+python convert_vissl_to_torchvision.py --model_url_or_file $CHECKPOINT_DIR/model_final_checkpoint_phase199.torch \
+                                       --output_dir $CHECKPOINT_DIR \
+                                       --output_name last_model
 
 # move slurm output from default location to logs after the job is finished
 mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
