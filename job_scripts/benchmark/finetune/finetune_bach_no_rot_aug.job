@@ -52,12 +52,12 @@ fi
 SEEDS=(7 187 389)
 for seed in ${SEEDS[@]}; do
   SEED_DIR=$CHECKPOINT_DIR/seed_$seed
-  # Hyperparameters from /home/b.dolicki/logs/supervised/bach_tuning/15219/run_3
+  # Hyperparameters from /home/b.dolicki/logs/benchmark/finetune/lr_finetune_bach_no_rot_aug/15774/run_2
   python train.py --dataset bach --data_dir $DATA_DIR --old_img_path_prefix $OLD_IMG_PATH_PREFIX \
                     --new_img_path_prefix $NEW_IMG_PATH_PREFIX --log_dir $SEED_DIR  \
                     --mlflow_dir /home/b.dolicki/mlflow_runs --num_workers 1 --batch_size 64 \
                     --model_type resnet18 --max_lr 0.0001 --lr_scheduler_type Constant --optimizer adam \
-                    --weight_decay 1e-05 --exp_name finetune_bach_no_rot_aug --num_epochs 27 --seed $seed --no_validation \
+                    --weight_decay 1e-05 --exp_name finetune_bach_no_rot_aug --num_epochs 19 --seed $seed --no_validation \
                     --no_early_stopping --checkpoint_path $PRETRAINED_WEIGHTS --no_rotation_transforms
 
   FINETUNED_WEIGHTS=$SEED_DIR/checkpoints/final_model.pt
