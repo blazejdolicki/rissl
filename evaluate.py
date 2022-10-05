@@ -113,7 +113,7 @@ def evaluate_split(args, split, transform):
     actual_data_size = 0.0
     # following docs https://torchmetrics.readthedocs.io/en/stable/classification/auroc.html
 
-    epoch_metrics = utils.init_metrics(num_classes)
+    epoch_metrics = utils.init_metrics(num_classes, args.selected_metrics)
 
     with torch.no_grad():
         for batch in dataloader:
@@ -201,6 +201,7 @@ if __name__ == "__main__":
                              'Useful for quick debugging and experiments with low data regimes.')
     parser.add_argument('--last_hid_dims', type=int, default=-1,
                         help='Dimensionality of the last hidden activations for e2')
+    parser.add_argument("--selected_metrics", type=str, default="auroc,confusion_matrix,f1")
 
     args = parser.parse_args()
 

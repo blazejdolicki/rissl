@@ -341,8 +341,11 @@ def assert_pretrained_state_dict(missing_keys, unexpected_keys):
     assert len(unexpected_keys) == 0, f"Unexpected key(s) in state_dict: {unexpected_keys}"
 
 
-def init_metrics(num_classes):
+def init_metrics(num_classes, selected_metrics):
     metrics = {"auroc": AUROC(num_classes=num_classes, average='macro'),
                "confusion_matrix": ConfusionMatrix(num_classes=num_classes),
                "f1": F1Score(num_classes=num_classes, average='macro')}
+
+    selected_metrics = selected_metrics.split(",")
+    metrics = {k: v for k, v in metrics.items() if k in selected_metrics}
     return metrics
