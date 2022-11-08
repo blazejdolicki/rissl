@@ -1,6 +1,4 @@
-# Self-supervised learning with group
-equivariant networks for histopathological
-images
+# Self-supervised learning with group equivariant networks for histopathological images
 Repository containing code for my MSc thesis "Self-supervised learning with group
 equivariant networks for histopathological
 images". Keep in mind that the commands mentioned below apply for Linux and will often not work on other operating systems.
