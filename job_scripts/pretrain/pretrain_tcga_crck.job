@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -N 1 # number of nodes
-#SBATCH -p batch
+#SBATCH -p a6000
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=pretrain_pcam_moco
+#SBATCH --job-name=pretrain_tcga_crck
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
@@ -12,8 +12,8 @@ CONFIG_PATH=pretrain/moco/pretrain_moco.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
-DATA_HOME_DIR="/mnt/archive/projectdata/data_pcam/disk_folder"
-DATA_SCRATCH_DIR="$SCRATCH"/"data/pcam/disk_folder"
+DATA_HOME_DIR="/mnt/archive/data/pathology/TCGA_Kather_preprocessed/images/ffpe"
+DATA_SCRATCH_DIR="$SCRATCH"/"data/tcga_crck"
 
 # might need to add this: conda deactivate because of https://github.com/conda/conda/issues/9392#issue-514911258
 source activate vissl
@@ -50,22 +50,17 @@ export VISSL_DATASET_CATALOG_PATH=/home/b.dolicki/thesis/vissl/custom_catalog.js
 python3 tools/run_distributed_engines.py \
     hydra.verbose=true \
     config=$CONFIG_PATH\
-    config.DATA.TRAIN.DATASET_NAMES=[pcam] \
-    config.DATA.TRAIN.DATA_SOURCES=[disk_folder] \
-    config.DATA.TRAIN.LABEL_SOURCES=[disk_folder] \
-    +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train"] \
-    config.DATA.TEST.DATASET_NAMES=[pcam] \
-    config.DATA.TEST.DATA_SOURCES=[disk_folder] \
-    config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
-    +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
-    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \sq
+    config.DATA.TRAIN.DATASET_NAMES=[tcga_crck] \
+    config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
+    +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_images.npy"] \
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
     config.OPTIMIZER.num_epochs=200 # TODO increase number of epochs to 200 after debugging
 
 # save file with best epoch and loss
 cd $HOME/thesis/rissl
 python tools/best_pretraining_epoch.py --log_dir $CHECKPOINT_DIR
 
-python convert_vissl_to_torchvision.py --model_url_or_file $CHECKPOINT_DIR/model_final_checkpoint_phase199.torch \
+python tools/convert_vissl_to_torchvision.py --model_url_or_file $CHECKPOINT_DIR/model_final_checkpoint_phase199.torch \
                                        --output_dir $CHECKPOINT_DIR \
                                        --output_name last_model
 
