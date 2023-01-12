@@ -2,13 +2,13 @@
 #SBATCH -N 1 # number of nodes
 #SBATCH -p a6000
 #SBATCH --gpus-per-node=1
-#SBATCH --job-name=pretrain_tcga_crck
+#SBATCH --job-name=pretrain_tcga_crck_e2
 #SBATCH -t 7-00:00:00
 #SBATCH --output=temp_logs/slurm_output_%j.out
 #SBATCH --cpus-per-task=16
-#SBATCH --exclude=eudoxus
 
-CONFIG_PATH=pretrain/moco/pretrain_moco.yaml
+
+CONFIG_PATH=pretrain/moco/pretrain_moco_e2.yaml
 LOGS_DIR=/home/b.dolicki/logs
 CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
@@ -19,6 +19,7 @@ DATA_SCRATCH_DIR="$SCRATCH"/"data/tcga_crck"
 source activate vissl
 cd $HOME/thesis/vissl
 
+# TODO change to true after debugging
 use_scratch=true
 
 if [ "$use_scratch" = true ] ; then
@@ -54,18 +55,19 @@ python3 tools/run_distributed_engines.py \
     config.DATA.TRAIN.DATA_SOURCES=[disk_filelist] \
     +config.DATA.TRAIN.DATA_PATHS=["$DATA_DIR/train_images.npy"] \
     config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
-    config.OPTIMIZER.num_epochs=200 # TODO increase number of epochs to 200 after debugging
+    config.MODEL.TRUNK.E2_RESNETS.fixparams=True \
+    config.OPTIMIZER.num_epochs=200 # TODO increase number of epochs
 
-# save file with best epoch and loss
 cd $HOME/thesis/rissl
-python tools/best_pretraining_epoch.py --log_dir $CHECKPOINT_DIR
 
 # move VISSL checkpoints to a separate folder
 VISSL_CHECKPOINT_DIR=$CHECKPOINT_DIR/vissl
 mkdir $VISSL_CHECKPOINT_DIR
 mv $CHECKPOINT_DIR/*.torch $CHECKPOINT_DIR/vissl
 
+# TODO change `every_n` to 20
 python convert_vissl_to_torchvision.py --checkpoint_path $CHECKPOINT_DIR --every_n 20
 
 # move slurm output from default location to logs after the job is finished
-mv temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+mv ../rissl/temp_logs/slurm_output_$SLURM_JOB_ID.out $CHECKPOINT_DIR/
+

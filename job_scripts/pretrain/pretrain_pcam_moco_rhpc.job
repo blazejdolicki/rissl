@@ -58,7 +58,7 @@ python3 tools/run_distributed_engines.py \
     config.DATA.TEST.DATA_SOURCES=[disk_folder] \
     config.DATA.TEST.LABEL_SOURCES=[disk_folder] \
     +config.DATA.TEST.DATA_PATHS=["$DATA_DIR/valid"] \
-    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \sq
+    config.CHECKPOINT.DIR=$CHECKPOINT_DIR \
     config.OPTIMIZER.num_epochs=200 # TODO increase number of epochs to 200 after debugging
 
 # save file with best epoch and loss
