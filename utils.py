@@ -274,8 +274,8 @@ def check_model_equivariance(model, dataloader, device, num_classes):
     logging.info('#' * (num_classes + 2) * 6)
     logging.info("")
 
-def parse_args_from_checkpoint(args):
 
+def parse_args_from_checkpoint(args):
 
     if args.checkpoint_path is not None:
         if ("supervised" in args.checkpoint_path) or ("finetune" in args.checkpoint_path):

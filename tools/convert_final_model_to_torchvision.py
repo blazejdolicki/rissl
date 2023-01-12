@@ -1,13 +1,8 @@
-import argparse
-from argparse import Namespace
 import os
-import json
-import logging
 import argparse
 import logging
-import sys
 
-from convert_vissl_to_torchvision import convert_and_save_model
+from rissl.convert_vissl_to_torchvision import convert_and_save_model
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--log_dir", type=str, help="Directory with logs including the best model checkpoint")
