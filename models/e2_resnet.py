@@ -224,7 +224,8 @@ class E2ResNet(torch.nn.Module):
         width_per_group: int = 64,
         num_input_channels=3,
         replace_stride_with_dilation: Optional[List[bool]] = None,
-        last_hid_dims=-1
+        last_hid_dims=-1,
+        headless=False
     ) -> None:
         """
 
@@ -263,6 +264,7 @@ class E2ResNet(torch.nn.Module):
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
         self.groups = groups
         self.base_width = width_per_group
+        self.headless = headless
 
         # Equivariant part of initialization of ResNet
         self._fixparams = fixparams
@@ -353,8 +355,9 @@ class E2ResNet(torch.nn.Module):
 
         self.avgpool = torch.nn.AdaptiveAvgPool2d((1,1))
         linear_input_features = self.mp.out_type.size if not self.conv2triv else self.layer4.out_type.size
-        # TODO not sure about the linear input size here
-        self.fc = torch.nn.Linear(linear_input_features, num_classes)
+
+        if not self.headless:
+            self.fc = torch.nn.Linear(linear_input_features, num_classes)
 
         for module in self.modules():
             if isinstance(module, nn.R2Conv):
@@ -504,7 +507,9 @@ class E2ResNet(torch.nn.Module):
             x = self.mp(x)
         x = self.avgpool(x.tensor)
         x = torch.flatten(x, 1)
-        x = self.fc(x)
+
+        if not self.headless:
+            x = self.fc(x)
 
         return x
 
