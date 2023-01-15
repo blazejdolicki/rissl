@@ -1,4 +1,6 @@
 import argparse
+
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 import logging
@@ -115,7 +117,8 @@ def evaluate_split(args, split, transform):
     # following docs https://torchmetrics.readthedocs.io/en/stable/classification/auroc.html
 
     epoch_metrics = utils.init_metrics(num_classes, args.selected_metrics)
-
+    all_probs = []
+    all_labels = []
     with torch.no_grad():
         for batch in dataloader:
 
@@ -135,9 +138,20 @@ def evaluate_split(args, split, transform):
             correct += (preds == labels).sum().item()
 
             probs = F.softmax(outputs, dim=1)
+
+            all_probs.append(probs.cpu().numpy())
+            all_labels.append(labels.cpu().numpy())
             # update state of every metric
             for metric_name in epoch_metrics:
                 epoch_metrics[metric_name](probs.cpu(), labels.cpu())
+
+    import numpy as np
+    all_probs = np.concatenate(all_probs)
+    all_labels = np.concatenate(all_labels)
+    probs_and_labels = np.concatenate((all_labels.reshape(-1, 1), all_probs), axis=1)
+    probs_df = pd.DataFrame(probs_and_labels, columns=["label", "prob0", "prob1"])
+    probs_path = os.path.join(args.log_dir, f"{split}_probs.csv")
+    probs_df.to_csv(probs_path, index=False)
 
     final_metrics = {}
     for metric_name, metric in epoch_metrics.items():
