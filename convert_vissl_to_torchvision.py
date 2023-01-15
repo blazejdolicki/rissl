@@ -25,13 +25,60 @@ except ImportError:
 from vissl.utils.checkpoint import replace_module_prefix
 from vissl.utils.io import is_url
 
-from models import get_model
+sys.path.insert(0, "/projects/rissl/blazej/thesis/")
+from rissl.models import get_model
 
 
 # initiate the logger
 FORMAT = "%(asctime)s [%(levelname)s - %(filename)s: %(lineno)4d] %(message)s"
 logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
 logger = logging.getLogger(__name__)
+
+def convert_and_save_model(args, replace_prefix):
+    """
+    Legacy method used by convert_best_model_to_torchvision.py
+    :param args:
+    :param replace_prefix:
+    :return:
+    """
+    assert g_pathmgr.exists(args.output_dir), "Output directory does NOT exist"
+
+    # load the model
+    model_path = args.model_url_or_file
+    if is_url(model_path):
+        logger.info(f"Loading from url: {model_path}")
+        model = load_state_dict_from_url(model_path)
+    else:
+        model = torch.load(model_path, map_location=torch.device("cpu"))
+
+    # get the model trunk to rename
+    if "classy_state_dict" in model.keys():
+        model_trunk = model["classy_state_dict"]["base_model"]["model"]["trunk"]
+    elif "model_state_dict" in model.keys():
+        model_trunk = model["model_state_dict"]
+    else:
+        model_trunk = model
+    logger.info(f"Input model loaded. Number of params: {len(model_trunk.keys())}")
+
+    if args.include_head:
+        model_head = model["classy_state_dict"]["base_model"]["model"]["heads"]
+        model_head = replace_module_prefix(model_head, prefix="0.clf.0.", replace_with="fc.")
+        model_trunk.update(model_head)
+
+    # convert the trunk
+    converted_model = replace_module_prefix(model_trunk, "_feature_blocks.")
+
+    logger.info(f"Converted model. Number of params: {len(converted_model.keys())}")
+
+    # save the state
+    if args.output_name.endswith(".torch"):
+        output_filename = f"converted_{args.output_name}"
+    else:
+        output_filename = f"converted_{args.output_name}.torch"
+    output_model_filepath = f"{args.output_dir}/{output_filename}"
+    logger.info(f"Saving model: {output_model_filepath}")
+    torch.save(converted_model, output_model_filepath)
+    logger.info("DONE!")
 
 
 def convert2torch(epoch_model, args):

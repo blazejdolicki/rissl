@@ -2,7 +2,8 @@ import os
 import json
 import argparse
 import logging
-
+import sys
+sys.path.insert(0, "/projects/rissl/blazej/thesis/")
 from rissl.convert_vissl_to_torchvision import convert_and_save_model
 
 parser = argparse.ArgumentParser()

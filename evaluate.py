@@ -45,6 +45,7 @@ def evaluate(args):
     utils.setup_logging(args.log_dir)
 
     args, transform = utils.parse_args_from_checkpoint(args)
+    args.headless = False
 
     print("transforms:")
     print(transform)

@@ -9,7 +9,7 @@
 #SBATCH --exclude=eudoxus
 
 CONFIG_PATH=pretrain/moco/pretrain_moco.yaml
-LOGS_DIR=/home/b.dolicki/logs
+LOGS_DIR=/projects/rissl/blazej/logs
 CHECKPOINT_DIR=$LOGS_DIR/pretrain/$SLURM_JOB_NAME/$SLURM_JOB_ID
 
 DATA_HOME_DIR="/mnt/archive/data/pathology/TCGA_Kather_preprocessed/images/ffpe"
