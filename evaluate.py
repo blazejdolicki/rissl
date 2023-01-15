@@ -149,7 +149,8 @@ def evaluate_split(args, split, transform):
     all_probs = np.concatenate(all_probs)
     all_labels = np.concatenate(all_labels)
     probs_and_labels = np.concatenate((all_labels.reshape(-1, 1), all_probs), axis=1)
-    probs_df = pd.DataFrame(probs_and_labels, columns=["label", "prob0", "prob1"])
+    prob_cols = [f"prob_{i}" for i in range(num_classes)]
+    probs_df = pd.DataFrame(probs_and_labels, columns=["label"]+prob_cols)
     probs_path = os.path.join(args.log_dir, f"{split}_probs.csv")
     probs_df.to_csv(probs_path, index=False)
 
