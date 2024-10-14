@@ -1,8 +1,13 @@
 # Self-supervised learning with group equivariant networks for histopathological images
 Repository containing code for my MSc thesis "Self-supervised learning with group
 equivariant networks for histopathological
-images". Keep in mind that the commands mentioned below apply for Linux and will often not work on other operating systems.
+images". 
+
+You can read my thesis here: [Master Thesis - Blazej Dolicki - Final.pdf](Master%20Thesis%20-%20Blazej%20Dolicki%20-%20Final.pdf)
+
+
 ## Installation
+Keep in mind that the commands mentioned below apply for Linux and will often not work on other operating systems.
 
 1. Clone my fork of VISSL: https://github.com/blazejdolicki/vissl. The two most important locations of this fork is [configs/config/pretrain/moco](https://github.com/blazejdolicki/vissl/tree/main/configs/config/pretrain/moco) which contain configs for MoCo models that I used for pretraining and [custom_catalog.json](https://github.com/blazejdolicki/vissl/blob/main/custom_catalog.json).
 2. Clone this repository, such that these two repos are on the same level in a directory tree, for instance:
